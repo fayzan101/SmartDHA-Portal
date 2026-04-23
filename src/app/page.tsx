@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import {
   FaXTwitter,
@@ -10,6 +11,39 @@ import {
 } from "react-icons/fa6";
 export default function Page() {
   const router = useRouter();
+  const [isSubmittingContact, setIsSubmittingContact] = useState(false);
+  const [contactStatus, setContactStatus] = useState<"idle" | "success" | "error">("idle");
+
+  const handleContactSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSubmittingContact(true);
+    setContactStatus("idle");
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    try {
+      const response = await fetch("https://formspree.io/f/mqewgrze", {
+        method: "POST",
+        body: formData,
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Form submission failed");
+      }
+
+      form.reset();
+      setContactStatus("success");
+    } catch (error) {
+      console.error("Contact form submission failed:", error);
+      setContactStatus("error");
+    } finally {
+      setIsSubmittingContact(false);
+    }
+  };
 
   const cards = [
     { title: "My Family", icon: "/icons/smart1.svg" },
@@ -656,7 +690,10 @@ export default function Page() {
           </div>
           {/* Right: Form Panel */}
           <div className="flex-1 bg-white p-10 flex flex-col justify-center">
-            <form className="w-full">
+            <form
+              className="w-full"
+              onSubmit={handleContactSubmit}
+            >
               {/* Row: Name + Email */}
               <div className="flex gap-4 mb-4">
                 <div className="flex-1 flex flex-col">
@@ -665,8 +702,10 @@ export default function Page() {
                   </label>
                   <input
                     type="text"
+                    name="fullName"
                     placeholder="Enter your name"
                     className="border border-gray-200 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-400"
+                    required
                   />
                 </div>
 
@@ -676,8 +715,10 @@ export default function Page() {
                   </label>
                   <input
                     type="email"
+                    name="email"
                     placeholder="Enter your email"
                     className="border border-gray-200 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-400"
+                    required
                   />
                 </div>
               </div>
@@ -689,8 +730,10 @@ export default function Page() {
                 </label>
                 <input
                   type="text"
+                  name="subject"
                   placeholder="Enter subject"
                   className="border border-gray-200 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-400"
+                  required
                 />
               </div>
 
@@ -700,18 +743,33 @@ export default function Page() {
                   Message
                 </label>
                 <textarea
+                  name="message"
                   placeholder="Tell us about your project..."
                   className="border border-gray-200 rounded-md px-4 py-3 min-h-[120px] focus:outline-none focus:ring-2 focus:ring-green-400"
+                  required
                 />
               </div>
+
+              <input type="hidden" name="_subject" value="New Smart DHA contact form submission" />
 
               {/* Button */}
               <button
                 type="submit"
+                disabled={isSubmittingContact}
                 className="bg-[#30B33D] hover:bg-green-600 text-white px-8 py-3 rounded-md font-semibold flex items-center gap-2"
               >
-                Send Message <ArrowRight />
+                {isSubmittingContact ? "Sending..." : "Send Message"} <ArrowRight />
               </button>
+              {contactStatus === "success" && (
+                <p className="mt-4 text-sm text-green-600">
+                  Your message has been sent successfully.
+                </p>
+              )}
+              {contactStatus === "error" && (
+                <p className="mt-4 text-sm text-red-600">
+                  Something went wrong. Please try again.
+                </p>
+              )}
             </form>
           </div>
         </div>
