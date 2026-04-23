@@ -1,0 +1,118 @@
+'use client';
+import { useState } from 'react';
+import { useInvoices } from '../../../../hooks/invoice/useInvoices';
+import { useRouter } from 'next/navigation';
+import DataTable, { Column, Tab, StatusBadge } from '../../../../components/tables/DataTable';
+import CircularButton from '../../../../components/ui/CircularButton';
+import { saveTableRow } from '../../../../lib/tableRowStorage';
+
+interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  userId: string;
+  name: string;
+  serviceType: string;
+  amount: number;
+  taxAmount: number;
+  bankCharges: number;
+  totalAmount: number;
+  paymentMethod: string;
+  trialPeriodDays: number;
+  transactionId: string;
+  status: 'Paid' | 'Pending' | 'Failed';
+}
+
+interface InvoiceTableProps {
+  tabs: Tab[];
+  activeTab: string;
+  onTabChange: (tab: string) => void;
+  onAddNew: () => void;
+  addButtonLabel: string;
+}
+
+
+
+
+export default function InvoiceTable({
+  tabs,
+  activeTab,
+  onTabChange,
+  onAddNew,
+  addButtonLabel
+}: InvoiceTableProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const router = useRouter();
+  const { data, isLoading } = useInvoices();
+  // Map InvoiceRecord to Invoice for DataTable
+  const invoices: Invoice[] = (data?.data || []).map((inv) => ({
+    id: inv.id,
+    invoiceNumber: inv.invoiceNumber,
+    userId: inv.entityId || '',
+    name: inv.entityType || '', 
+    serviceType: inv.entityType || '', 
+    amount: inv.amount,
+    taxAmount: inv.taxAmount,
+    bankCharges: 0, 
+    totalAmount: inv.totalAmount,
+    paymentMethod: inv.paymentMethod || '',
+    trialPeriodDays: inv.trialPeriodDays ?? 15,
+    transactionId: inv.transactionId || '',
+    status: (inv.status === 'Paid' || inv.status === 'Pending' || inv.status === 'Failed') ? inv.status : 'Pending',
+  }));
+
+  const handleEdit = (item: Invoice) => {
+    saveTableRow('invoice', item);
+    router.push('/setup/invoice/edit-invoice');
+  };
+
+  const handleDelete = (id: string) => {
+    console.log('Delete Invoice:', id);
+    // Handle delete if needed
+  };
+
+  const dashIfEmpty = (value: any) =>
+    value === null || value === undefined || value === '' ? '-' : value;
+
+  const columns: Column<Invoice>[] = [
+    { key: 'invoiceNumber', header: 'Invoice Number', render: dashIfEmpty },
+    { key: 'name', header: 'Name', render: dashIfEmpty },
+    { key: 'serviceType', header: 'Entity Type', render: dashIfEmpty },
+    { key: 'amount', header: 'Amount', render: dashIfEmpty },
+    { key: 'taxAmount', header: 'Tax Amount', render: dashIfEmpty },
+    { key: 'totalAmount', header: 'Total Amount', render: dashIfEmpty },
+    { key: 'paymentMethod', header: 'Payment Method', render: dashIfEmpty },
+    { key: 'trialPeriodDays', header: 'Trial Period (Days)', render: dashIfEmpty },
+    { key: 'transactionId', header: 'Transaction ID', render: dashIfEmpty },
+    { 
+      key: 'status', 
+      header: 'Status',
+      render: (value: 'Paid' | 'Pending' | 'Failed') => <StatusBadge status={value} />
+    },
+    {
+      key: 'action',
+      header: 'Action',
+      render: (_, row) => (
+        <div style={{ display: 'flex', gap: '4px' }}>
+          <CircularButton imagePath="/icons/Edit Button.svg" imageAlt="Edit" width={32} height={32} onClick={() => handleEdit(row)} />
+          <CircularButton imagePath="/icons/DeleteButton.svg" imageAlt="Delete" width={32} height={32} onClick={() => handleDelete(row.id)} />
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <DataTable<Invoice>
+      tabs={tabs}
+      activeTab={activeTab}
+      onTabChange={onTabChange}
+      columns={columns}
+      data={invoices}
+      loading={isLoading}
+      showAddButton={true}
+      addButtonLabel={addButtonLabel}
+      onAddClick={onAddNew}
+      currentPage={currentPage}
+      onPageChange={setCurrentPage}
+    />
+  );
+}

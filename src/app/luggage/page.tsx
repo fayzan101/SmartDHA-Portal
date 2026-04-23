@@ -1,0 +1,150 @@
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import DashboardLayout from '../../components/layout/DashboardLayout';
+import DataTable, { StatusBadge, Column } from '../../components/tables/DataTable';
+import CircularButton from '../../components/ui/CircularButton';
+import WarningModal from '../../components/popup/WarningModal';
+import { saveTableRow } from '../../lib/tableRowStorage';
+import { useLuggage } from '../../hooks/luggage/useLuggage';
+import { useDeleteLuggage } from '../../hooks/luggage/useDeleteLuggage';
+import type { Luggage } from '../../services/luggage.service';
+
+interface LuggagePass {
+  id: string;
+  name: string;
+  userName?: string;
+  vehicleInfo: string;
+  visitDetail: string;
+  validity: string;
+  cnicNicopNo: string;
+  status: boolean;
+  sno?: number;
+}
+
+type SelectedLuggageRow = Pick<Luggage, 'id'>;
+
+const formatDate = (value: string) => {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString();
+};
+
+const toLuggagePassTypeLabel = (passType?: string | number): string => {
+  if (passType === 'DayPass' || passType === 1) return 'Day Pass';
+  if (passType === 'LongDay' || passType === 2) return 'Long Stay';
+  return '-';
+};
+
+export default function LuggagePage() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedLuggage, setSelectedLuggage] = useState<SelectedLuggageRow | null>(null);
+  const [localRemovedIds, setLocalRemovedIds] = useState<string[]>([]);
+
+  const { data, isLoading, isError, error } = useLuggage();
+  const { mutateAsync: deleteLuggage, isPending: isDeleting } = useDeleteLuggage();
+
+  const luggagePasses: LuggagePass[] = (data?.data || [])
+    .filter((item) => item && !localRemovedIds.includes(item.id))
+    .map((item, idx) => ({
+      sno: idx + 1,
+      id: item.id,
+      name: item.name,
+      userName: item.externalUserName || '-',
+      vehicleInfo: item.vehicleLicensePlate || '-',
+      visitDetail: toLuggagePassTypeLabel(item.luggagePassType),
+      validity: `${formatDate(item.validFrom)} - ${formatDate(item.validTo)}`,
+      cnicNicopNo: item.cnic,
+      status: item.isActive && !item.isDeleted,
+    }));
+
+  const router = useRouter();
+
+  const handleAddNew = () => {
+    router.push('/luggage/add-luggage');
+  };
+
+  const handleEdit = (luggage: LuggagePass) => {
+    saveTableRow('luggage', luggage);
+    router.push(`/luggage/edit-luggage?id=${encodeURIComponent(luggage.id)}`);
+  };
+
+  const handleDelete = (luggage: SelectedLuggageRow) => {
+    setSelectedLuggage(luggage);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedLuggage) {
+      return;
+    }
+
+    try {
+      const response = await deleteLuggage({ id: selectedLuggage.id });
+      const isSuccess = response?.statusCode === 0 || response?.statusCode === 200;
+      if (isSuccess) {
+        setLocalRemovedIds((prev) => [...prev, selectedLuggage.id]);
+      }
+    } catch {
+      // Keep modal flow stable even when API fails.
+    }
+
+    setDeleteModalOpen(false);
+    setSelectedLuggage(null);
+  };
+
+  const columns: Column<LuggagePass>[] = [
+    { key: 'sno', header: 'S.No' },
+    { key: 'name', header: 'Name' },
+    { key: 'vehicleInfo', header: 'Vehicle Info' },
+    { key: 'visitDetail', header: 'Visit Detail' },
+    { key: 'validity', header: 'Validity' },
+    { key: 'cnicNicopNo', header: 'CNIC/NICOP No.' },
+    { 
+      key: 'status', 
+      header: 'Status',
+      render: (value: boolean) => <StatusBadge type="activeInactive" value={value} />
+    },
+    { 
+      key: 'action', 
+      header: 'Action',
+      render: (_, row) => (
+        <div style={{ display: 'flex', gap: '4px' }}>
+          <CircularButton imagePath="/icons/Edit Button.svg" imageAlt="Edit" width={32} height={32} onClick={() => handleEdit(row)} />
+          <CircularButton imagePath="/icons/DeleteButton.svg" imageAlt="Delete" width={32} height={32} onClick={() => handleDelete(row)} />
+        </div>
+      )
+    },
+  ];
+
+  return (
+    <DashboardLayout pageTitle="Luggage">
+      <DataTable<LuggagePass>
+        columns={columns}
+        data={luggagePasses}
+        loading={isLoading}
+        onAddClick={handleAddNew}
+        addButtonLabel="Add New"
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+        getRowStatus={(row) => row.status ? 'Active' : 'Inactive'}
+        error={isError ? `Failed to load luggage: ${error instanceof Error ? error.message : 'Unknown error'}` : undefined}
+      />
+      <WarningModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Luggage Record"
+        message={isDeleting ? 'Deleting...' : 'Are you sure you want to delete this luggage record? This action cannot be undone.'}
+      />
+    </DashboardLayout>
+  );
+}
