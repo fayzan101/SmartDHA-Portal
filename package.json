@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "next lint",
+    "eslint": "eslint .",
+    "check-middleware": "certutil -hashfile src/app/middleware.ts SHA256 | findstr /v /c:\"certutil\" /c:\"SHA256\" /c:\"hash\" /c:\"file\" | findstr /v /c:\"\" > temp.hash && fc /b temp.hash middleware.hash > nul || (echo ERROR: middleware.ts has been modified! && exit 1)"
   },
   "dependencies": {
     "@microsoft/signalr": "^10.0.0",
@@ -22,12 +24,12 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
-    "@types/node": "^20",
+    "@types/node": "25.3.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.24",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.19",
-    "typescript": "^5"
+    "typescript": "^5.9.3"
   }
 }
