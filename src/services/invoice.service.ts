@@ -30,9 +30,32 @@ export interface RemoveInvoiceResponse {
 	errorMessage: string | null;
 }
 
-export async function getAllInvoices(): Promise<GetAllInvoicesResponse> {
-	const response = await apiClient.get("/invoices/GetAllInvoices");
-	return response.data;
+
+export interface GetAllInvoicesPayload {
+	pageNumber: number;
+	pageSize: number;
+	invoiceNumber?: string;
+	fromDate?: string;
+	toDate?: string;
+}
+
+export async function getAllInvoices(payload: GetAllInvoicesPayload): Promise<GetAllInvoicesResponse> {
+	// Only send pageNumber and pageSize in the payload
+	const fullPayload = {
+		pageNumber: payload.pageNumber ?? 1,
+		pageSize: payload.pageSize ?? 10,
+	};
+	const response = await apiClient.post("/invoices/GetAllInvoices", fullPayload);
+	
+	const apiData = response.data;
+	// If the API returns nested data, flatten it to match the expected response
+	if (apiData && apiData.data && apiData.data.data && Array.isArray(apiData.data.data.items)) {
+		return {
+			...apiData,
+			data: apiData.data.data.items,
+		};
+	}
+	return apiData;
 }
 
 export async function removeInvoice(id: string): Promise<RemoveInvoiceResponse> {
@@ -40,14 +63,17 @@ export async function removeInvoice(id: string): Promise<RemoveInvoiceResponse> 
 	return response.data;
 }
 export interface CreateInvoicePayload {
+	id: string;
+	paymentMethod: string;
+	transactionId: string;
 	invoiceNumber: string;
 	tagId: string;
 	entityType: string;
-	entityId: string;
-	amount: number;
-	taxAmount: number;
-	totalAmount: number;
-	createdBy: string;
+	entityId?: string;
+	amount?: number;
+	taxAmount?: number;
+	totalAmount?: number;
+	createdBy?: string;
 }
 
 export async function createInvoice(payload: CreateInvoicePayload): Promise<RemoveInvoiceResponse> {
@@ -56,17 +82,17 @@ export async function createInvoice(payload: CreateInvoicePayload): Promise<Remo
 }
 export interface UpdateInvoicePayload {
 	id: string;
-	status: string;
 	paymentMethod: string;
-	transactionId: string;
 	invoiceNumber: string;
 	tagId: string;
 	entityType: string;
-	lastModifiedBy: string;
-	entityId: string;
-	amount: number;
-	taxAmount: number;
-	totalAmount: number;
+	entityId?: string;
+	transactionId?: string;
+	status?: string;
+	lastModifiedBy?: string;
+	amount?: number;
+	taxAmount?: number;
+	totalAmount?: number;
 }
 
 export async function updateInvoice(payload: UpdateInvoicePayload): Promise<RemoveInvoiceResponse> {
