@@ -62,6 +62,7 @@ export default function Page() {
             alt="Smart DHA City"
             width={40}
             height={40}
+            style={{ width: "auto", height: "auto" }}
           />
           <span className="font-bold text-lg">Smart DHA City</span>
         </div>
@@ -127,7 +128,7 @@ export default function Page() {
         </nav>
         <button
           className="bg-gradient-to-r from-[#30B33D] to-[#2BD53C] hover:from-[#30B33D] hover:to-[#30B33D] duration-100 transition text-white px-10 py-2 rounded-md text-sm font-semibold"
-          onClick={() => router.push("/login")}
+          onClick={() => router.push("/auth/sign-in")}
         >
           Register Now
         </button>
@@ -147,14 +148,14 @@ export default function Page() {
           <div className="flex gap-4 mb-8">
             <button
               className="bg-[#30B33D] hover:bg-green-600 text-white px-6 py-3 rounded-md font-semibold flex items-center gap-2"
-              onClick={() => router.push("/login")}
+              onClick={() => router.push("/auth/sign-in")}
             >
               Start Living Smarter
               <ArrowRight />
             </button>
             <button
               className="border border-green-500 text-green-500 px-6 py-3 rounded-md font-semibold bg-white hover:bg-green-50"
-              onClick={() => router.push("/login")}
+              onClick={() => router.push("/auth/sign-in")}
             >
               Get Started
             </button>
@@ -183,13 +184,14 @@ export default function Page() {
         <div className="flex flex-col gap-6 w-min">
           {/* Right: Image */}
           <div className="flex-1 flex items-center justify-center w-full ">
-            <div className="rounded-3xl overflow-hidden shadow-lg w-[550px] h-[650px] 2xl:h-[700px] 2xl:w-[860px] max-w-[1080px] max-h-[700px]">
+            <div className="relative rounded-3xl overflow-hidden shadow-lg w-[550px] h-[650px] 2xl:h-[700px] 2xl:w-[860px] max-w-[1080px] max-h-[700px]">
               <Image
                 src="/images/login-sideimg.jpg"
                 alt="DHA Karachi"
-                width={860}
-                height={150}
-                className="object-cover w-full h-full"
+                fill
+                sizes="(min-width: 1536px) 860px, (min-width: 1024px) 550px, 100vw"
+                loading="eager"
+                className="object-cover"
               />
             </div>
           </div>
@@ -265,6 +267,7 @@ export default function Page() {
                     alt="About Us"
                     width={20}
                     height={20}
+                    style={{ width: "auto", height: "auto" }}
                   />
                   About Us
                   <Image
@@ -272,6 +275,7 @@ export default function Page() {
                     alt="About Us"
                     width={20}
                     height={20}
+                    style={{ width: "auto", height: "auto" }}
                   />
                 </button>
               </div>
@@ -309,11 +313,12 @@ export default function Page() {
             </div>
             {/* Right: Image */}
             <div className="flex flex-col items-center relative">
-              <div className="rounded-2xl overflow-hidden shadow-lg w-[600px] h-[650px] ">
+              <div className="relative rounded-2xl overflow-hidden shadow-lg w-[600px] h-[650px] ">
                 <Image
                   src="/images/contact.png"
                   alt="DHA Karachi"
                   fill
+                  sizes="(min-width: 1024px) 600px, 100vw"
                   className="object-cover object-bottom object-left"
                 />
               </div>
@@ -325,6 +330,7 @@ export default function Page() {
                   alt="Award"
                   width={60}
                   height={60}
+                  style={{ width: "auto", height: "auto" }}
                 ></Image>
                 <span className="font-medium text-[#161C2D] text-xl leading-6 tracking-wide">
                   National<br></br>Real Estate<br></br>Awards
@@ -348,6 +354,7 @@ export default function Page() {
               alt="About Us"
               width={20}
               height={20}
+              style={{ width: "auto", height: "auto" }}
             />
             Features
             <Image
@@ -355,6 +362,7 @@ export default function Page() {
               alt="About Us"
               width={20}
               height={20}
+              style={{ width: "auto", height: "auto" }}
             />
           </button>
         </div>
@@ -415,6 +423,7 @@ export default function Page() {
               alt="About Us"
               width={20}
               height={20}
+              style={{ width: "auto", height: "auto" }}
             />
             Smart DHA
             <Image
@@ -422,6 +431,7 @@ export default function Page() {
               alt="About Us"
               width={20}
               height={20}
+              style={{ width: "auto", height: "auto" }}
             />
           </button>
         </div>
@@ -521,6 +531,7 @@ export default function Page() {
               alt="About Us"
               width={20}
               height={20}
+              style={{ width: "auto", height: "auto" }}
             />
             Contact
             <Image
@@ -528,6 +539,7 @@ export default function Page() {
               alt="About Us"
               width={20}
               height={20}
+              style={{ width: "auto", height: "auto" }}
             />
           </button>
         </div>
@@ -716,6 +728,7 @@ export default function Page() {
                 width={40}
                 height={40}
                 className="w-10 h-10"
+                style={{ width: "auto", height: "auto" }}
               />
               <span className="font-medium text-2xl text-black">
                 Smart DHA City

@@ -31,8 +31,6 @@ export default function SignInForm({ login, isPending }: SignInFormProps) {
     }
   }, []);
 
-  if (isPending) return null;
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
