@@ -2,6 +2,8 @@
 'use client';
 import DashboardLayout from '../../../../components/layout/DashboardLayout';
 import CommonEntityForm, { ProfileField, ProfileFormData } from '../../../../components/forms/CommonEntityForm';
+import { useEffect, useState } from 'react';
+import { getEnumMetadata } from '../../../../services/enum.service';
 import { useSearchParams } from 'next/navigation';
 import { useGetTagApprovalRequestById } from '../../../../hooks/tag-approval/useGetTagApprovalRequestById';
 
@@ -19,8 +21,91 @@ export default function AddNewTag() {
   const { data: feeScaleData, isLoading: isFeeScaleLoading } = useFeeScales();
   const { data: deviceData, isLoading: isDeviceLoading } = useDevices();
   const { data: zoneData, isLoading: isZoneLoading } = useZones();
-  const { data: tagTypeData, isLoading: isTagTypeLoading } = useGetAllTagTypes();
+
+  // Restore approveTagMutation declaration
   const approveTagMutation = useApproveTagApprovalRequest();
+  const { data: tagTypeData, isLoading: isTagTypeLoading } = useGetAllTagTypes();
+
+  // State to track form data for auto-filling dates
+  const [planType, setPlanType] = useState<string>('');
+  const [calculatedDates, setCalculatedDates] = useState<{ validFrom: string; validTo: string }>({ validFrom: '', validTo: '' });
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Calculate dates based on plan type - returns an object with validFrom and validTo
+  const calculateDatesByPlanType = (type: string | Number) => {
+    if (!type) {
+      return { validFrom: '', validTo: '' };
+    }
+
+    const today = new Date();
+    const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    let daysToAdd = 0;
+
+    // Convert type to number for switch comparison
+    const typeNum = Number(type);
+
+    // Map plan types to days based on actual enum: Day(1), Week(2), Month(3), Year(4)
+    switch (typeNum) {
+      case 1: // Day
+        daysToAdd = 1;
+        break;
+      case 2: // Week
+        daysToAdd = 7;
+        break;
+      case 3: // Month
+        daysToAdd = 30;
+        break;
+      case 4: // Year
+        daysToAdd = 365;
+        break;
+      default:
+        daysToAdd = 0;
+    }
+
+    if (daysToAdd >= 0) {
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + daysToAdd);
+      console.log(endDate)
+
+      return {
+        validFrom: startDate.toISOString().split('T')[0],
+        validTo: endDate.toISOString().split('T')[0],
+      };
+    }
+
+    return { validFrom: '', validTo: '' };
+  };
+
+  // Update calculated dates whenever plan type changes
+  useEffect(() => {
+    if (planType) {
+      const dates = calculateDatesByPlanType(planType);
+      console.log('Plan Type Changed:', planType, 'Calculated Dates:', dates);
+      setCalculatedDates(dates);
+    }
+  }, [planType]);
+
+  // PlanType enum options state
+  const [planTypeOptions, setPlanTypeOptions] = useState([
+    { value: '', label: 'Select Plan Type' }
+  ]);
+  useEffect(() => {
+    async function fetchPlanTypeOptions() {
+      try {
+        const res = await getEnumMetadata({ EnumType: 'PlanType' });
+        const planTypeEnum = res.data.enums.find(e => e.name === 'PlanType');
+        if (planTypeEnum) {
+          setPlanTypeOptions([
+            { value: '', label: 'Select Plan Type' },
+            ...planTypeEnum.members.map(m => ({ value: m.value.toString(), label: m.name }))
+          ]);
+        }
+      } catch {
+        // fallback: leave as default
+      }
+    }
+    fetchPlanTypeOptions();
+  }, []);
 
   const toDateInputValue = (value?: string | null) => {
     if (!value) {
@@ -105,9 +190,9 @@ export default function AddNewTag() {
   ];
   
   const approveFields: ProfileField[] = [
-    { name: 'tagApprovalRequestId' as keyof ProfileFormData, label: 'Tag Approval Request ID', type: 'text', required: true, placeholder: 'Tag Approval Request ID here' },
-    { name: 'name' as keyof ProfileFormData, label: 'Entity Name', type: 'text', required: true, placeholder: 'Entity Name here' },
-    { name: 'entityId' as keyof ProfileFormData, label: 'Entity ID', type: 'text', required: true, placeholder: 'Enter Entity ID here' },
+    { name: 'tagApprovalRequestId' as keyof ProfileFormData, label: 'Tag Approval Request ID', type: 'text', required: true, placeholder: 'Tag Approval Request ID here', readOnly: true },
+     { name: 'name' as keyof ProfileFormData, label: 'Entity Name', type: 'text', required: true, placeholder: 'Entity Name here', readOnly: true },
+    { name: 'entityId' as keyof ProfileFormData, label: 'Entity ID', type: 'text', required: true, placeholder: 'Enter Entity ID here', readOnly: true },
     {
       name: 'tagType' as keyof ProfileFormData,
       label: 'Tag Type',
@@ -116,8 +201,6 @@ export default function AddNewTag() {
       readOnly: true,
     },
     { name: 'tagNumber' as keyof ProfileFormData, label: 'Tag Number', type: 'text', required: true, placeholder: 'Enter Tag Number here' },
-    { name: 'validFrom' as keyof ProfileFormData, label: 'Valid From', type: 'date', required: true, placeholder: 'Select Date' },
-    { name: 'validTo' as keyof ProfileFormData, label: 'Valid To', type: 'date', required: true, placeholder: 'Select Date' },
     {
       name: 'feeScaleId' as keyof ProfileFormData,
       label: 'Fee Scale',
@@ -132,14 +215,11 @@ export default function AddNewTag() {
       type: 'select',
       required: true,
       placeholder: 'Select Plan Type',
-      options: [
-        { value: '', label: 'Select Plan Type' },
-        { value: 'Day', label: 'Day' },
-        { value: 'Week', label: 'Week' },
-        { value: 'Month', label: 'Month' },
-        { value: 'Year', label: 'Year' },
-      ],
+      options: planTypeOptions,
+      onChange: (value: string | number | boolean) => setPlanType(String(value)),
     },
+    { name: 'validFrom' as keyof ProfileFormData, label: 'Valid From', type: 'date', required: true, placeholder: 'Select Date', readOnly: true },
+    { name: 'validTo' as keyof ProfileFormData, label: 'Valid To', type: 'date', required: true, placeholder: 'Select Date', readOnly: true },
     { name: 'status' as keyof ProfileFormData, label: 'Status', type: 'statusSwitch', required: false, placeholder: 'Status' },
     {
       name: 'trialPeriod' as keyof ProfileFormData,
@@ -183,7 +263,7 @@ export default function AddNewTag() {
       feeScaleId: formData.feeScaleId !== undefined ? String(formData.feeScaleId) : String(tag.feeScale || ''),
       deviceId: String(formData.device || ''),
       trialPeriod: String(formData.trialPeriod || 'Unknown'),
-      planType: 'unknown',
+      planType: formData.planType ? String(Number(formData.planType)) : "0",
     };
 
     console.log('approveTagApprovalRequest payload:', payload);
@@ -195,14 +275,39 @@ export default function AddNewTag() {
   let initialValues: Partial<ProfileFormData> = {};
   if (data && data.data) {
     const tag = data.data;
+    
+    // Initialize planType only once during data load
+    if (!isInitialized && !planType && tag.planType) {
+      console.log('[approve page] Initializing planType from tag:', tag.planType);
+      setPlanType(String(tag.planType));
+      setIsInitialized(true);
+    }
+    
+    // Determine which dates to use: calculated dates from planType take priority
+    // If planType has calculated dates, use those. Otherwise use tag dates.
+    let validFromValue = '';
+    let validToValue = '';
+    
+    // If we have calculated dates (from plan type selection), use them
+    if (calculatedDates.validFrom && calculatedDates.validTo) {
+      console.log('[approve page] Using calculated dates:', calculatedDates);
+      validFromValue = calculatedDates.validFrom;
+      validToValue = calculatedDates.validTo;
+    } else {
+      // Otherwise use dates from the tag
+      console.log('[approve page] Using tag dates');
+      validFromValue = toDateInputValue(tag.validFrom);
+      validToValue = toDateInputValue(tag.validTo);
+    }
+
     initialValues = {
       tagApprovalRequestId: tag.id,
       name: tag.subjectName,
       entityId: tag.subjectId,
       tagType: tag.tagType || '',
       tagNumber: tag.tagNumber,
-      validFrom: toDateInputValue(tag.validFrom),
-      validTo: toDateInputValue(tag.validTo),
+      validFrom: validFromValue,
+      validTo: validToValue,
       feeScaleId: tag.feeScale,
       status: toStatusFlag(tag.status),
       planType: tag.planType || '',
@@ -211,6 +316,8 @@ export default function AddNewTag() {
       device: '',
       notes: tag.notes,
     };
+    
+    console.log('[approve page] Final initialValues:', initialValues);
   }
 
   return (

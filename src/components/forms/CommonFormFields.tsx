@@ -63,7 +63,8 @@ const getInputStyle = (field: ProfileField): React.CSSProperties => ({
   height: toCssSize(field.inputHeight),
 });
 
-export function TextInputField({ field, value, onChange, styles, wrapperClassName }: InputFieldProps) {
+// Add disabled prop for phone/cell auto-disable
+export function TextInputField({ field, value, onChange, styles, wrapperClassName, maxLength }: InputFieldProps & { maxLength?: number }) {
   return (
     <div className={`${styles.capsule} ${wrapperClassName ?? ''}`.trim()} style={getWrapperStyle(field)}>
       <label className={styles.labelGreen}>
@@ -79,6 +80,7 @@ export function TextInputField({ field, value, onChange, styles, wrapperClassNam
         value={value}
         onChange={onChange}
         readOnly={field.readOnly}
+        maxLength={maxLength}
       />
     </div>
   );
@@ -105,6 +107,13 @@ export function SelectInputField({ field, value, onChange, styles, wrapperClassN
     selectElement.click();
   };
 
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onChange(e);
+    if (field.onChange) {
+      field.onChange(e.target.value);
+    }
+  };
+
   return (
     <div className={`${styles.capsule} ${wrapperClassName ?? ''}`.trim()} style={getWrapperStyle(field)}>
       <label className={styles.labelGreen}>
@@ -119,7 +128,7 @@ export function SelectInputField({ field, value, onChange, styles, wrapperClassN
           className={styles.select}
           style={getInputStyle(field)}
           value={value}
-          onChange={onChange}
+          onChange={handleChange}
         >
           {field.options?.map((option) => (
             <option key={option.value} value={option.value} >
@@ -173,6 +182,7 @@ export function DateInputField({ field, value, onChange, styles, wrapperClassNam
         style={getInputStyle(field)}
         value={value}
         onChange={onChange}
+        placeholder={field.placeholder || field.label}
       />
       <div style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)' }}>
         <CircularButton imagePath='/icons/Calendar.svg' width="24px" height="24px" onClick={openDatePicker} />
