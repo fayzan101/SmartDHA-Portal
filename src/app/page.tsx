@@ -47,38 +47,80 @@ export default function Page() {
   };
 
   const cards = [
-    { title: "My Family", icon: "/icons/smart1.svg" },
-    { title: "My Vehicle", icon: "/icons/smart2.svg" },
-    { title: "My Property", icon: "/icons/smart3.svg" },
-    { title: "My Worker", icon: "/icons/smart4.svg" },
-    { title: "Visitor Pass", icon: "/icons/smart5.svg" },
-    { title: "Luggage Pass", icon: "/icons/smart6.svg" },
+    {
+      title: "My Family",
+      icon: "/icons/smart1.svg",
+      description:
+        "Add and manage family member details linked to your resident account for smoother access to DHA services.",
+    },
+    {
+      title: "My Vehicle",
+      icon: "/icons/smart2.svg",
+      description:
+        "Keep registered vehicle information organized for verification, record updates, and entry-related needs.",
+    },
+    {
+      title: "My Property",
+      icon: "/icons/smart3.svg",
+      description:
+        "Review your property information, ownership records, and key account-linked details in one place.",
+    },
+    {
+      title: "My Worker",
+      icon: "/icons/smart4.svg",
+      description:
+        "Maintain worker profiles and supporting details to help streamline routine access and record management.",
+    },
+    {
+      title: "Visitor Pass",
+      icon: "/icons/smart5.svg",
+      description:
+        "Create visitor passes in advance so guests can be recorded properly before arriving at the community.",
+    },
+    {
+      title: "Luggage Pass",
+      icon: "/icons/smart6.svg",
+      description:
+        "Request luggage movement permissions online for planned deliveries, shifting, or household transport needs.",
+    },
   ];
 
   const featureCards = [
     {
       title: "Smart DHA",
       icon: "/icons/logo1.svg",
+      description:
+        "View your resident profile, linked assets, submitted requests, and important community updates from one dashboard.",
     },
     {
       title: "My Bills",
       icon: "/icons/logo2.svg",
+      description:
+        "Check current dues, review payment history, and keep track of billing records without visiting the office.",
     },
     {
       title: "Property Management",
       icon: "/icons/logo3.svg",
+      description:
+        "Access plot details, ownership information, and related records whenever you need them.",
     },
     {
       title: "DHA Club",
       icon: "/icons/logo4.svg",
+      description:
+        "Stay updated on club facilities, membership information, and activity access available to residents.",
     },
     {
       title: "DHA Services",
       icon: "/icons/logo5.svg",
+      description:
+        "Submit service-related requests and follow their status through a simpler digital process.",
     },
     {
       title: "Emergency Help",
       icon: "/icons/logo6.svg",
+      description:
+        "Reach important support channels quickly when you need assistance with urgent community matters.",
     },
   ];
 
@@ -417,19 +459,23 @@ export default function Page() {
                 />
               </div>
 
-              {/* Trophy Card */}
-              <div className="absolute -bottom-10 left-[-40px] bg-white rounded-2xl shadow-lg py-8 px-5 w-[170px] flex flex-col items-start gap-6 border border-green-100">
-                <Image
-                  src="/images/trophy.png"
-                  alt="Award"
-                  width={60}
-                  height={60}
-                  style={{ width: "auto", height: "auto" }}
-                ></Image>
-                <span className="font-medium text-[#161C2D] text-xl leading-6 tracking-wide">
-                  National<br></br>Real Estate<br></br>Awards
-                </span>
-              </div>
+              {aboutTab === "about" && (
+                <>
+                  {/* Trophy Card */}
+                  <div className="absolute -bottom-10 left-[-40px] bg-white rounded-2xl shadow-lg py-8 px-5 w-[170px] flex flex-col items-start gap-6 border border-green-100">
+                    <Image
+                      src="/images/trophy.png"
+                      alt="Award"
+                      width={60}
+                      height={60}
+                      style={{ width: "auto", height: "auto" }}
+                    ></Image>
+                    <span className="font-medium text-[#161C2D] text-xl leading-6 tracking-wide">
+                      National<br></br>Real Estate<br></br>Awards
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -495,8 +541,7 @@ export default function Page() {
 
               {/* Description */}
               <div className="text-gray-500 text-[14px] mb-6 transition-all duration-300 group-hover:text-white/90">
-                Lorem ipsum dolor sit amet consectetur. Enim dui et enim cras
-                donec nibh accumsan.
+                {card.description}
               </div>
 
               {/* Bottom line */}
@@ -547,7 +592,7 @@ export default function Page() {
 
               <div className="flex items-center justify-between w-full">
                 <span className="text-gray-500 group-hover:text-white/90 transition">
-                  Lorem ipsum dolor sit amet
+                  {card.description}
                 </span>
 
                 <span className="w-10 h-10 flex items-center justify-center rounded-full bg-green-500">
