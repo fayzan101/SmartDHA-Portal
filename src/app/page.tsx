@@ -13,6 +13,7 @@ export default function Page() {
   const router = useRouter();
   const [isSubmittingContact, setIsSubmittingContact] = useState(false);
   const [contactStatus, setContactStatus] = useState<"idle" | "success" | "error">("idle");
+  const [aboutTab, setAboutTab] = useState<"about" | "administrator">("about");
 
   const handleContactSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -85,8 +86,8 @@ export default function Page() {
     <div className="min-h-screen w-full bg-white flex flex-col scroll-smooth ">
       {/* Top Info Bar */}
       <div className="w-full bg-green-600 text-white text-center py-2 text-xs">
-        Lorem ipsum dolor sit amet consectetur. Sapien feugiat donec viverra
-        libero et non
+        Access Smart DHA to manage your property, payments, passes, and
+        community services in one place.
       </div>
       {/* Header */}
       <header className="flex items-center justify-between px-12 py-4 bg-white shadow-sm">
@@ -172,45 +173,46 @@ export default function Page() {
         {/* Left: Text */}
         <div className="flex-1 max-w-2xl">
           <h1 className="text-6xl font-medium text-black leading-[60px] mb-4">
-            Lorem ipsum dolor sit amet{" "}
-            <span className="text-green-500">consectetur.</span>
+            Your complete{" "}
+            <span className="text-green-500">DHA resident portal.</span>
           </h1>
           <p className="text-gray-500 mb-8 text-xl max-w-xl">
-            Lorem ipsum dolor sit amet consectetur. Sapien feugiat donec viverra
-            libero et non. Fames odio nunc quisque amet ac adipiscing.
+            Smart DHA helps residents handle property records, family and
+            vehicle details, visitor passes, billing, and community services
+            from a single secure dashboard.
           </p>
           <div className="flex gap-4 mb-8">
             <button
               className="bg-[#30B33D] hover:bg-green-600 text-white px-6 py-3 rounded-md font-semibold flex items-center gap-2"
               onClick={() => router.push("/auth/sign-in")}
             >
-              Start Living Smarter
+              Access Your Dashboard
               <ArrowRight />
             </button>
             <button
               className="border border-green-500 text-green-500 px-6 py-3 rounded-md font-semibold bg-white hover:bg-green-50"
               onClick={() => router.push("/auth/sign-in")}
             >
-              Get Started
+              Create Account
             </button>
           </div>
           <div className="flex gap-2 flex-wrap justify-center md:justify-normal font-poppins">
             <div className="bg-[#EAFDE4] p-4 rounded-md min-w-[120px] md:max-w-[250px] h-[120px] flex flex-col justify-evenly">
               <div className="text-2xl font-bold text-black mb-1">92%</div>
               <div className="text-gray-600 text-sm">
-                Lorem ipsum dolor sit amet consectetur. Sapien feugiat
+                Resident satisfaction with digital access to DHA services
               </div>
             </div>
             <div className="min-w-[120px] p-4 md:max-w-[250px] h-[120px] flex flex-col justify-evenly">
               <div className="text-2xl font-bold text-black mb-1">100K +</div>
               <div className="text-gray-600 text-sm">
-                Lorem ipsum dolor sit amet consectetur. Sapien feugiat
+                Service requests, passes, and account actions handled online
               </div>
             </div>
             <div className="min-w-[120px] p-4 md:max-w-[250px] h-[120px] flex flex-col justify-evenly">
               <div className="text-2xl font-bold text-black mb-1">4.5/5</div>
               <div className="text-gray-600 text-sm">
-                Lorem ipsum dolor sit amet consectetur. Sapien feugiat
+                User rating for convenience, speed, and ease of use
               </div>
             </div>
           </div>
@@ -272,7 +274,12 @@ export default function Page() {
           </svg>
           {/* Play Video Button */}
           <div className="relative z-10 flex flex-col items-center">
-            <button className="flex items-center gap-3 bg-white/90 px-8 py-4 rounded-full shadow-lg border-2 border-white hover:scale-105 transition-transform">
+            <a
+              href="https://youtu.be/qt3czRWTxPY?si=ZUEQPciUqIKEHg6Z"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-3 bg-white/90 px-8 py-4 rounded-full shadow-lg border-2 border-white hover:scale-105 transition-transform"
+            >
               <span className="w-8 h-8 flex items-center justify-center bg-green-500 rounded-full text-white font-bold text-lg">
                 ▶
               </span>
@@ -282,7 +289,7 @@ export default function Page() {
                   5 mins &nbsp;–&nbsp; Play video
                 </span>
               </span>
-            </button>
+            </a>
           </div>
         </div>
 
@@ -320,37 +327,90 @@ export default function Page() {
                     "-10px -10px 20px 0px #FFFFFF99, 3px 3px 20px 0px #AAAACC80",
                 }}
               >
-                <button className="flex items-center justify-center px-2 py-2 bg-[#30B33D] text-white rounded-[6px] font-normal text-xs shadow w-[180px] h-[50px] whitespace-nowrap">
+                <button
+                  className={`flex items-center justify-center px-2 py-2 rounded-[6px] font-normal text-xs shadow w-[180px] h-[50px] whitespace-nowrap transition-colors ${
+                    aboutTab === "about"
+                      ? "bg-[#30B33D] text-white"
+                      : "bg-white text-[#30B33D]"
+                  }`}
+                  onClick={() => setAboutTab("about")}
+                  type="button"
+                >
                   About Smart DHA
                 </button>
-                <button className="flex items-center justify-center px-2 py-2 bg-white text-[#30B33D] rounded-[6px] font-normal text-xs shadow w-[180px] h-[50px] whitespace-nowrap">
+                <button
+                  className={`flex items-center justify-center px-2 py-2 rounded-[6px] font-normal text-xs shadow w-[180px] h-[50px] whitespace-nowrap transition-colors ${
+                    aboutTab === "administrator"
+                      ? "bg-[#30B33D] text-white"
+                      : "bg-white text-[#30B33D]"
+                  }`}
+                  onClick={() => setAboutTab("administrator")}
+                  type="button"
+                >
                   Administrator Message
                 </button>
               </div>
-              <h2 className="text-6xl font-normal text-black mb-4 max-w-xl">
-                Lorem ipsum dolor sit amet{" "}
-                <span className="text-green-500">consectetur.</span>
-              </h2>
-              <p className="text-gray-500 mb-6 text-2xl max-w-[800px]">
-                Lorem ipsum dolor sit amet consectetur. Nibh vitae mauris a
-                lacus cursus. Proin odio turpis vel sed gravida proin elementum
-                pharetra. Faucibus interdum luctus pulvinar sed maecenas sapien.
-                Vel aliquam amet non cursus sit nec. Quam faucibus enim interdum
-                nisl nam diam. At consequat volutpat phasellus non pellentesque
-                cum ante quam.
-              </p>
-              <p className="text-gray-500 text-2xl max-w-[800px]">
-                Vel aliquam amet non cursus sit nec. Quam faucibus enim interdum
-                nisl nam diam. At consequat volutpat phasellus non pellentesque
-                cum ante quam.
-              </p>
+              {aboutTab === "about" ? (
+                <>
+                  <h2 className="text-6xl font-normal text-black mb-4 max-w-xl">
+                    Building a smarter,{" "}
+                    <span className="text-green-500">more sustainable future.</span>
+                  </h2>
+                  <p className="text-gray-500 mb-6 text-2xl max-w-[800px]">
+                    DHA City Karachi, a path-breaking venture, lies on the M-9
+                    Motorway and stands as Pakistan&apos;s premier smart and
+                    sustainable city. This project, spanning over 22,000 acres of
+                    land, has garnered international recognition for its innovative
+                    approach to urban planning and development.
+                  </p>
+                  <p className="text-gray-500 text-2xl max-w-[800px]">
+                    Certified by the Institute for Sustainable Infrastructure, USA
+                    in 2014, DHA City is a testament to its commitment to
+                    environmental sustainability and a smart lifestyle. The
+                    city&apos;s master plan is meticulously designed to create a
+                    self-sufficient and eco-friendly environment, incorporating
+                    cutting-edge infrastructure and services.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-6xl font-normal text-black mb-4 max-w-3xl">
+                    Message from the{" "}
+                    <span className="text-green-500">Administrator.</span>
+                  </h2>
+                  <div className="text-gray-500 text-lg max-w-[900px] space-y-5 leading-8">
+                    <p>
+                      It is a matter of great pleasure for me to interact with
+                      the residents and stake holders of Defence Housing
+                      Authority through the medium of DHA Official Website and
+                      to extend my best wishes to them.
+                    </p>
+                    <div className="pt-4 text-[#161C2D]">
+                      <p className="text-2xl font-semibold">
+                        Brig Muhammad Kashif Naeem
+                      </p>
+                      <p className="text-base text-gray-500">
+                        Administrator, DHA City Karachi
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
             {/* Right: Image */}
             <div className="flex flex-col items-center relative">
               <div className="relative rounded-2xl overflow-hidden shadow-lg w-[600px] h-[650px] ">
                 <Image
-                  src="/images/contact.png"
-                  alt="DHA Karachi"
+                  src={
+                    aboutTab === "about"
+                      ? "/images/contact.png"
+                      : "/images/brig-image.png"
+                  }
+                  alt={
+                    aboutTab === "about"
+                      ? "DHA Karachi"
+                      : "Administrator DHA City Karachi"
+                  }
                   fill
                   sizes="(min-width: 1024px) 600px, 100vw"
                   className="object-cover object-bottom object-left"
@@ -402,12 +462,13 @@ export default function Page() {
         </div>
         {/* Heading */}
         <h2 className="text-6xl font-normal text-center text-black mb-4 max-w-2xl">
-          Lorem ipsum dolor sit amet{" "}
-          <span className="text-green-500">consectetur.</span>
+          Everything you need to{" "}
+          <span className="text-green-500">manage DHA online.</span>
         </h2>
         <p className="text-gray-500 text-center max-w-4xl mx-auto mb-12">
-          Lorem ipsum dolor sit amet consectetur. Sapien feugiat donec viverra
-          libero et non. Fames odio nunc quisque amet ac adipiscing.
+          Explore essential portal features designed to simplify resident life,
+          from bill payments and property management to club access, support
+          services, and emergency assistance.
         </p>
         {/* Features Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-5xl">
@@ -471,8 +532,8 @@ export default function Page() {
         </div>
         {/* Heading */}
         <h2 className="text-6xl font-normal text-black mb-2 max-w-2xl">
-          Lorem ipsum dolor sit amet{" "}
-          <span className="text-green-500">consectetur.</span>
+          Smart tools for{" "}
+          <span className="text-green-500">everyday resident needs.</span>
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mt-8">
           {cards.map((card, i) => (
@@ -512,15 +573,21 @@ export default function Page() {
           {/* Green Background Card (now covers both sides) */}
           <div className="flex-1 md:w-3/5 rounded-2xl bg-[#C7E6BD] flex flex-col justify-start pl-10 pr-0 py-10 min-h-[400px] relative z-10">
             <h2 className="text-5xl font-normal text-black mb-4 leading-10 max-w-xl">
-              Lorem ipsum dolor sit amet{" "}
-              <span className="text-green-500">consectetur.</span>
+              Smart DHA in your{" "}
+              <span className="text-green-500">pocket, anytime.</span>
             </h2>
             <p className="text-gray-700 mb-6 max-w-lg text-lg">
-              Lorem ipsum dolor sit amet consectetur. Sapien feugiat donec
-              viverra libero et non. Fames odio nunc quisque amet ac adipiscing.
+              Use the Smart DHA app to manage your account, monitor property and
+              billing details, request passes, and stay connected with essential
+              DHA services wherever you are.
             </p>
             <div className="flex flex-col gap-2 items-start">
-              <a href="#" className="block">
+              <a
+                href="https://play.google.com/store/apps/details?id=com.dhak.smartdha"
+                target="_blank"
+                rel="noreferrer"
+                className="block"
+              >
                 <Image
                   src="/images/Play.png"
                   alt="Get it on Google Play"
@@ -529,7 +596,12 @@ export default function Page() {
                   className="h-10 w-auto"
                 />
               </a>
-              <a href="#" className="block">
+              <a
+                href="https://apps.apple.com/us/app/smart-dha-karachi/id6757914681"
+                target="_blank"
+                rel="noreferrer"
+                className="block"
+              >
                 <Image
                   src="/images/app.png"
                   alt="Download on the App Store"
@@ -579,8 +651,8 @@ export default function Page() {
         </div>
         {/* Heading */}
         <h2 className="text-6xl font-normal text-center text-black mb-10 max-w-2xl">
-          Lorem ipsum dolor sit amet{" "}
-          <span className="text-green-500">consectetur.</span>
+          Connect with the{" "}
+          <span className="text-green-500">Smart DHA team.</span>
         </h2>
         {/* Contact Card */}
         <div className="w-full max-w-5xl flex flex-col md:flex-row rounded-2xl shadow-lg overflow-hidden bg-white h-[500px]">
@@ -659,28 +731,36 @@ export default function Page() {
 
               <div className="flex gap-4">
                 <a
-                  href="#"
+                  href="https://www.facebook.com/DHACityKhiOfc/"
+                  target="_blank"
+                  rel="noreferrer"
                   className="p-2 rounded-md bg-white/20 text-white hover:text-[#30B33D] hover:bg-white hover:scale-110 transition"
                 >
                   <FaFacebookF />
                 </a>
 
                 <a
-                  href="#"
+                  href="https://x.com/dhakarachiofc/status/1490037348599484425"
+                  target="_blank"
+                  rel="noreferrer"
                   className="p-2 rounded-md bg-white/20 text-white hover:text-[#30B33D] hover:bg-white hover:scale-110 transition"
                 >
                   <FaXTwitter />
                 </a>
 
                 <a
-                  href="#"
+                  href="https://www.linkedin.com/company/dha-city-karachi/?originalSubdomain=pk"
+                  target="_blank"
+                  rel="noreferrer"
                   className="p-2 rounded-md bg-white/20 text-white hover:text-[#30B33D] hover:bg-white hover:scale-110 transition"
                 >
                   <FaLinkedinIn />
                 </a>
 
                 <a
-                  href="#"
+                  href="https://www.instagram.com/dhacitykhiofc/"
+                  target="_blank"
+                  rel="noreferrer"
                   className="p-2 rounded-md bg-white/20 text-white hover:text-[#30B33D] hover:bg-white hover:scale-110 transition"
                 >
                   <FaInstagram />
@@ -793,11 +873,16 @@ export default function Page() {
               </span>
             </div>
             <div className="text-gray-700 text-xl mb-2 max-w-[250px] text-justify">
-              Lorem ipsum dolor sit amet consectetur. Sapien feugiat donec
-              viverra libero et non.
+              Smart DHA connects residents with property, billing, passes, and
+              essential community services through one digital platform.
             </div>
             <div className="flex gap-6 mt-2">
-              <a href="#" className="inline-block">
+              <a
+                href="https://x.com/dhakarachiofc/status/1490037348599484425"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-block"
+              >
                 <Image
                   src="/images/x.png"
                   alt="X"
@@ -807,7 +892,12 @@ export default function Page() {
                 />
               </a>
 
-              <a href="#" className="inline-block">
+              <a
+                href="https://www.facebook.com/DHACityKhiOfc/"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-block"
+              >
                 <Image
                   src="/images/fb.png"
                   alt="Facebook"
@@ -817,7 +907,12 @@ export default function Page() {
                 />
               </a>
 
-              <a href="#" className="inline-block">
+              <a
+                href="https://www.instagram.com/dhacitykhiofc/"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-block"
+              >
                 <Image
                   src="/images/insta.png"
                   alt="Instagram"
@@ -827,7 +922,12 @@ export default function Page() {
                 />
               </a>
 
-              <a href="#" className="inline-block">
+              <a
+                href="https://www.linkedin.com/company/dha-city-karachi/?originalSubdomain=pk"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-block"
+              >
                 <Image
                   src="/images/linkendin.png"
                   alt="LinkedIn"
