@@ -10,7 +10,8 @@ const tabContent: Record<
   AboutTab,
   {
     title: string;
-    description: string;
+    description1: string;
+    description2?: string;
     showPortrait?: boolean;
     personName?: string;
     personRole?: string;
@@ -18,15 +19,17 @@ const tabContent: Record<
 > = {
   administrator: {
     title: "Administrator Message",
-    description:
+    description1:
       "It is a matter of great pleasure to interact with the residents and stakeholders of Defence Housing Authority through this digital platform. DHA Karachi has emerged as one of Pakistan's leading residential destinations by offering a blend of security, modern living, and community-focused facilities.",
+    description2:
+      "We will continue working with dedication and vision to maintain the high living standards DHA is known for. May Allah bless us all.",
     showPortrait: true,
     personName: "Brig. Ameer Nawaz Khan",
     personRole: "Administrator DHA Karachi",
   },
   about: {
     title: "About DHA Karachi",
-    description:
+    description1:
       "Pakistan Defence Officers Housing Authority was established to serve armed forces officers, civilians, and their families. DHA Karachi is now one of the largest residential communities, offering a balanced lifestyle with secure neighborhoods, modern infrastructure, and essential community services.",
   },
 };
@@ -37,32 +40,37 @@ export default function AboutPage() {
   const currentTab = tabContent[activeTab];
 
   return (
-    <main className="min-h-screen bg-[#111111] px-4 py-6 md:px-8 md:py-10">
-      <div className="mx-auto max-w-[1500px]">
-        <p className="mb-4 text-lg text-white/70">About Us 02</p>
-
-        <section className="rounded-[26px] bg-[#f6f7fb] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.22)] md:p-8 lg:p-10">
-          <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.65fr)_minmax(360px,430px)] lg:gap-12">
-            <div className="relative overflow-hidden rounded-[18px] bg-white shadow-[0_18px_45px_rgba(36,41,47,0.12)]">
-              <div className="relative min-h-[360px] sm:min-h-[460px] lg:min-h-[680px]">
-                <Image
-                  src="/images/about-image.png"
-                  alt="Smart DHA City Portal"
-                  fill
-                  priority
-                  sizes="(min-width: 1024px) 60vw, 100vw"
-                  className="object-cover"
-                />
+    <main className="min-h-screen w-full overflow-x-hidden bg-[#f6f7fb] p-4 md:p-6 lg:p-8 flex items-center">
+      <div className={`mx-auto w-full max-w-[1600px] min-h-[90vh]
+            ${activeTab === "administrator" ? "h-full" : "h-[90vh]"}
+        `}>
+        <section className="rounded-[26px] bg-[#f6f7fb] px-5 h-full">
+          <div className="flex flex-col lg:flex-row h-full gap-12 lg:gap-20">
+            
+            {/* Image Section */}
+            <div className="w-full">
+              <div className="relative overflow-hidden rounded-[8px] bg-white shadow-[0_18px_45px_rgba(36,41,47,0.12)]" style={{ height: '100%' }}>
+                <div className="relative w-full" style={{ height: '100%', minHeight: '400px' }}>
+                  <Image
+                    src="/images/about-image.png"
+                    alt="Smart DHA City Portal"
+                    fill
+                    priority
+                    sizes="(min-width: 1024px) 50vw, 100vw"
+                    className="object-cover"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-col items-center px-1 pt-2 lg:px-4 lg:pt-6">
+            {/* Content Section */}
+            <div className="flex w-full flex-col items-center justify-start lg:pt-8 lg:w-1/2 ">
               <Image
                 src="/images/PDOHA.png"
                 alt="DHA Karachi"
                 width={132}
                 height={132}
-                className="mb-3 h-auto w-[92px] md:w-[108px]"
+                className="mb-3 w-[92px] md:w-[108px] "
               />
 
               <h1 className="text-center text-[26px] font-semibold text-[#161c2d]">
@@ -73,24 +81,22 @@ export default function AboutPage() {
               </p>
 
               <div className="mt-7 w-full rounded-[18px] bg-white p-2 shadow-[0_16px_36px_rgba(36,41,47,0.09)]">
-                <div className="grid grid-cols-2 rounded-[14px] bg-[#f3f5f9] p-1 text-sm">
+                <div className="grid grid-cols-2 rounded-[14px] bg-[#f3f5f9] p-0 text-sm">
                   <button
-                    type="button"
                     onClick={() => setActiveTab("administrator")}
-                    className={`rounded-[10px] px-3 py-3 text-center transition ${
+                    className={`px-3 py-3 text-center transition ${
                       activeTab === "administrator"
-                        ? "bg-white font-medium text-[#30B33D] shadow-sm"
+                        ? "bg-white font-medium text-[#30B33D] "
                         : "text-[#7e8794]"
                     }`}
                   >
                     Administrator Message
                   </button>
                   <button
-                    type="button"
                     onClick={() => setActiveTab("about")}
-                    className={`rounded-[10px] px-3 py-3 text-center transition ${
+                    className={`px-3 py-3 text-center transition ${
                       activeTab === "about"
-                        ? "bg-white font-medium text-[#30B33D] shadow-sm"
+                        ? "bg-white font-medium text-[#30B33D]  "
                         : "text-[#7e8794]"
                     }`}
                   >
@@ -105,15 +111,17 @@ export default function AboutPage() {
                         <Image
                           src="/images/brig-image.png"
                           alt="Administrator DHA Karachi"
-                          width={108}
-                          height={108}
-                          className="h-[108px] w-[108px] object-cover"
+                          width={118}
+                          height={138}
+                          className="h-[138px] w-[118px] object-cover"
                         />
                       </div>
                     </div>
                   )}
 
-                  <p className="text-[13px] leading-6">{currentTab.description}</p>
+                  <p className="text-[13px] leading-6">{currentTab.description1}</p>
+                  <br />  
+                  <p className="text-[13px] leading-6">{currentTab.description2}</p>
 
                   {currentTab.personName && (
                     <div className="mt-5">
@@ -129,9 +137,8 @@ export default function AboutPage() {
               </div>
 
               <button
-                type="button"
                 onClick={() => router.push("/")}
-                className="mt-6 h-12 w-full max-w-[230px] rounded-[10px] bg-[#30B33D] text-sm font-semibold text-white transition hover:bg-[#269531]"
+                className="mt-6 min-h-12 w-full max-w-[230px] rounded-[10px] bg-[#30B33D] text-sm font-semibold text-white transition hover:bg-[#269531]"
               >
                 Back
               </button>

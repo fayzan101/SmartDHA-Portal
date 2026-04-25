@@ -1,4 +1,3 @@
-
 import styles from "./DashboardComponents.module.css";
 import { useSyncSummary } from "../../../hooks/dashboard/useSyncSummary";
 
@@ -6,16 +5,14 @@ export default function StatsCards() {
   const { data, isLoading, isError } = useSyncSummary();
 
   const syncStats = [
-    { title: "Total Records", value: data?.data.totalRecords ?? "-", iconPath: "/icons/Stats/Stats.CPAgents.svg", iconAlt: "Total Records" },
-    { title: "Total Success", value: data?.data.totalSuccess ?? "-", iconPath: "/icons/Stats/Stats.Member.svg", iconAlt: "Total Success" },
-    { title: "Total Failed", value: data?.data.totalFailed ?? "-", iconPath: "/icons/Stats/Stats.Active.svg", iconAlt: "Total Failed" },
-    { title: "Total Pending Retry", value: data?.data.totalPendingRetry ?? "-", iconPath: "/icons/Stats/Stats.Employees.svg", iconAlt: "Total Pending Retry" },
+    { title: "Total Workers", value: data?.data.totalRecords ?? "-", iconPath: "/icons/Stats/Stats.CPAgents.svg", iconAlt: "Total Records" },
+    { title: "Total Residents", value: data?.data.totalSuccess ?? "-", iconPath: "/icons/Stats/Stats.Member.svg", iconAlt: "Total Success" },
+    { title: "Total Properties", value: data?.data.totalFailed ?? "-", iconPath: "/icons/Stats/Stats.Active.svg", iconAlt: "Total Failed" },
   ];
-
-  if (isError) return <div>Failed to load sync summary.</div>;
 
   return (
     <div className={styles.statsContainer}>
+      {isError && <div className={styles.errorMessage}>Failed to load sync summary.</div>}
       <div className={styles.statsGrid}>
         {syncStats.map((item, i) => (
           <div key={i} className={styles.statsCard}>

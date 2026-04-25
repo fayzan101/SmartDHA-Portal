@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import styles from "./DashboardLayout.module.css";
 import CircularButton from "../ui/CircularButton";
+import RightSidebar from "../shared/RightSidebar";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -274,6 +275,11 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
         </header>
         <section className={styles.contentSection}>{children}</section>
       </main>
+
+      <aside >
+        <RightSidebar />
+      </aside>
+
     </div>
   );
 }
