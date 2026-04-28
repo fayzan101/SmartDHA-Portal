@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 interface SignInFormProps {
-  login: (data: { email: string; password: string }, options: any) => void;
+  login: (data: { cnic: string; password: string }, options: any) => void;
   isPending: boolean;
 }
 
@@ -11,7 +11,7 @@ export default function SignInForm({ login, isPending }: SignInFormProps) {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    email: '',
+    cnic: '',
     password: '',
     remember: false
   });
@@ -20,11 +20,11 @@ export default function SignInForm({ login, isPending }: SignInFormProps) {
   // Autofill from localStorage if Remember Me was previously checked
   useEffect(() => {
     const remembered = localStorage.getItem("rememberMe");
-    const savedEmail = localStorage.getItem("rememberedEmail");
+    const savedCnic = localStorage.getItem("rememberedCnic");
     const savedPassword = localStorage.getItem("rememberedPassword");
-    if (remembered === "true" && savedEmail && savedPassword) {
+    if (remembered === "true" && savedCnic && savedPassword) {
       setFormData({
-        email: savedEmail,
+        cnic: savedCnic,
         password: savedPassword,
         remember: true
       });
@@ -39,22 +39,27 @@ export default function SignInForm({ login, isPending }: SignInFormProps) {
     if (formData.remember) {
       // Save credentials for next time
       localStorage.setItem("rememberMe", "true");
-      localStorage.setItem("rememberedEmail", formData.email);
+      localStorage.setItem("rememberedCnic", formData.cnic);
       localStorage.setItem("rememberedPassword", formData.password);
     } else {
       // Clear saved credentials if Remember Me is unchecked
       localStorage.removeItem("rememberMe");
-      localStorage.removeItem("rememberedEmail");
+      localStorage.removeItem("rememberedCnic");
       localStorage.removeItem("rememberedPassword");
     }
 
     login(
-      { email: formData.email, password: formData.password },
+      { cnic: formData.cnic, password: formData.password },
       {
         onSuccess: (data: any) => {
-          const token = data.data.token;
-          const fullName = data.data.fullName || data.data.name || '';
-
+          console.log("LOGIN RESPONSE:", data);
+          const token = data.accessToken;;
+          const fullName = data.fullName || data.name || '';
+          if (!token) {
+            console.error("Token missing in response:", data);
+              setFormError("Invalid response from server");
+              return;
+          }
           if (formData.remember) {
             // Save token to localStorage (persistent across sessions)
             localStorage.setItem("token", token);
@@ -108,15 +113,15 @@ export default function SignInForm({ login, isPending }: SignInFormProps) {
 
         <div className="input_fields">
           <div className="input_field">
-            <label htmlFor="email" className="auth_label">Email Address</label>
+            <label htmlFor="cnic" className="auth_label">CNIC</label>
             <input
-              type="email"
+              type="text"
               className="auth_input"
-              placeholder="Email Address Here"
-              name="email"
-              id="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="cnic"
+              name="cnic"
+              id="cnic"
+              value={formData.cnic}
+              onChange={(e) => setFormData({ ...formData, cnic: e.target.value })}
               required
             />
           </div>

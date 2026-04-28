@@ -25,7 +25,7 @@ export interface GetAllUsersResponse {
   };
 }
 export interface LoginRequest {
-  email: string;
+  cnic: string;
   password: string;
 }
 export interface LoginResponse {

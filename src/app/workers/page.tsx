@@ -94,29 +94,22 @@ export default function WorkersPage() {
     }
   }, [modalMode, modalId]);
 
-  const workers: Worker[] = (data?.data || [])
-    .filter((item) => item && !localRemovedIds.includes(item.id))
-    .map((item, idx) => ({
-      sno: idx + 1,
-      id: item.id,
-      workerName: item.name || '-',
-      userName: item.externalUserName || '-',
-      fatherOrHusbandName: item.fatherOrHusbandName || '-',
-      jobType:
-        typeof item.jobType === 'string'
-          ? item.jobType
-          : toJobTypeLabel(item.jobType),
-      phone: item.phoneNumber || '-',
-      dob: formatDateDisplay(item.dateOfBirth),
-      cnicNicopNo: item.cnic || '-',
-      policeVerification: item.policeVerification ? 'Yes' : 'No',
-      workerCardDelivery: item.workerCardDeliveryType?.toString() || '-',
-      workerStatus: !!(item.isActive && !item.isDeleted),
-      workerCard: item.workerCardNumber || '-',
-      issuedDate: formatDateDisplay(item.validFrom),
-      expiryDate: formatDateDisplay(item.validTo),
-      cardStatus: item.cardStatus,
-    }));
+const workers =
+  (data?.data?.items ?? []).map((item, idx) => ({
+    sno: idx + 1,
+    id: item.id,
+    workerName: item.name || "-",
+    jobType: item.jobType || "-",
+    phone: item.phoneNo || "-",
+    dob: item.dateOfBirth || "-",
+    cnicNicopNo: item.cnic || "-",
+    policeVerification: item.policeVerification ? "Yes" : "No",
+    workerCardDelivery: item.workerCardDeliveryType || "-",
+    workerStatus: item.isActive ?? false,
+    workerCard: item.workerCardNumber || "-",
+    issuedDate: item.validFrom || "-",
+    expiryDate: item.validTo || "-",
+  }));
 
 
   const handleAddNew = () => {
@@ -313,7 +306,7 @@ export default function WorkersPage() {
       header: 'S.No',
     },
     { key: 'workerName', header: 'Worker Name' },
-    { key: 'userName', header: 'User Name' },
+    //{ key: 'userName', header: 'User Name' },
     { key: 'jobType', header: 'Job Type' },
     { key: 'phone', header: 'Phone' },
     { key: 'dob', header: 'DOB' },

@@ -1,10 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { getAllExternalWorkers } from "../../services/worker.service";
 
-export const useWorkers = () => {
+export const useWorkers = (pageNumber: number, pageSize: number) => {
   return useQuery({
-    queryKey: ["workers"],
-    queryFn: getAllExternalWorkers,
-    staleTime: 5 * 60 * 1000,
+    queryKey: ["workers", pageNumber, pageSize],
+    queryFn: () => getAllExternalWorkers(pageNumber, pageSize),
   });
 };
