@@ -73,7 +73,7 @@ export default function VehiclePage() {
   const [editVehicleId, setEditVehicleId] = useState<string | undefined>();
   const [hasCheckedId, setHasCheckedId] = useState(false);
 
-  const { data, isLoading, isError, error } = useVehicles();
+  const { data, isLoading, isError, error } = useVehicles(currentPage, 10);
   const { data: editVehicleDetails, isLoading: isEditVehicleLoading } = useVehicleById(editVehicleId);
   const { mutateAsync: deleteVehicle, isPending: isDeleting } = useDeleteVehicle();
   const { mutateAsync: createVehicle } = useCreateVehicle();
@@ -135,24 +135,33 @@ export default function VehiclePage() {
 
   console.log('VehiclePage render with data:', data, 'isLoading:', isLoading, 'isError:', isError, 'error:', error);
 
-  const vehicles: Vehicle[] = (data?.data || [])
-    .filter((item) => item && !localRemovedIds.includes(item.id))
-    .map((item: ExternalVehicle, idx) => ({
-      sno: idx + 1,
-      id: item.id,
-      licensePlate: formatLicensePlate(item.license, item.licenseNo),
-      vehicleETagId: item.eTagId || '-',
-      eTagType: item.eTagId || '-',
-      issueDate: formatDateDisplay(item.validFrom),
-      expiryDate: formatDateDisplay(item.validTo),
-      ownership: item.externalUserId || '-',
-      externalUserName: item.externalUserName || '-',
-      make: item.make || '-',
-      model: item.model || '-',
-      year: item.year || '-',
-      color: item.color || '-',
-      tagStatus: item.tagStatus,
-    }));
+  // flatten nested structure: items -> vehicles
+const rawVehicles =
+  data?.data?.items?.flatMap((group) =>
+    (group.vehicles || []).map((v) => ({
+      ...v,
+      externalUserName: group.userName,
+    }))
+  ) || [];
+
+const vehicles: Vehicle[] = rawVehicles
+  .filter((item) => item && !localRemovedIds.includes(item.id))
+  .map((item, idx) => ({
+    sno: idx + 1,
+    id: item.id,
+    licensePlate: formatLicensePlate(item.license, item.licenseNo),
+    vehicleETagId: item.eTagId || '-',
+    eTagType: item.eTagId || '-',
+    issueDate: formatDateDisplay(item.validFrom),
+    expiryDate: formatDateDisplay(item.validTo),
+    ownership: item.externalUserId || '-',
+    externalUserName: item.externalUserName || '-',
+    make: item.make || '-',
+    model: item.model || '-',
+    year: item.year || '-',
+    color: item.color || '-',
+    tagStatus: item.tagStatus ?? null,
+  }));
 
 
   const handleAddNew = () => {

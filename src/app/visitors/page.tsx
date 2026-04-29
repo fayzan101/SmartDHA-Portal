@@ -21,7 +21,7 @@ import type { ExternalVisitorPass } from '../../services/visitor.service';
 
 interface Visitor {
   id: string;
-  visitorName: string;
+  name: string;
   userName: string;
   vehicleInfo: string;
   visitDetail: string;
@@ -57,7 +57,7 @@ export default function VisitorsPage() {
   const [editVisitorId, setEditVisitorId] = useState<string | undefined>();
   const [hasCheckedId, setHasCheckedId] = useState(false);
 
-  const { data, isLoading, isError, error } = useVisitors();
+  const { data, isLoading, isError, error } = useVisitors(currentPage, 10);
   const { data: editVisitorDetails, isLoading: isEditVisitorLoading } = useVisitorById(editVisitorId);
   const { mutateAsync: deleteVisitor, isPending: isDeleting } = useDeleteVisitor();
   const { mutateAsync: createVisitor } = useCreateVisitor();
@@ -86,22 +86,28 @@ export default function VisitorsPage() {
 
   console.log('Fetched visitors data:', data);
 
-  const visitors: Visitor[] = (data?.data || [])
-    .filter((item) => item && !localRemovedIds.includes(item.id))
-    .map((item, idx) => ({
-      sno: idx + 1,
-      id: item.id,
-      visitorName: item.name,
-      userName: item.externalUserName || '-',
-      vehicleInfo: `${item.vehicleLicensePlate}`,
-      visitDetail: toVisitorPassTypeLabel(item.visitorPassType),
-      validity: `${formatDateDisplay(item.validFrom)} - ${formatDateDisplay(item.validTo)}`,
-      cnicNicopNo: item.cnic,
-      hostDetails: item.externalUserName || 'host',
-      status: item.isActive && !item.isDeleted,
-      cardStatus: item.cardStatus,
-      externalUserId: item.externalUserId,
-    }));
+  const rawVisitors = [
+  ...(data?.data?.upcomingVisitors || []),
+  ...(data?.data?.previousVisitors || [])
+];
+
+const visitors = rawVisitors
+  .filter((item) => item && !localRemovedIds.includes(item.id))
+  .map((item, idx) => ({
+    sno: idx + 1,
+    id: item.id,
+
+    visitorName: item.name || '-',       // ✅ FIX
+    cnicNicopNo: item.cnic || '-',       // ✅ FIX
+
+    vehicleInfo: `${item.vehicleLicense || ''}-${item.vehicleLicenseNo || ''}`, // also fix here
+    visitDetail:
+      item.visitorPassType === 'DayPass' || item.visitorPassType === 1
+        ? 'Day Pass'
+        : 'Long Stay',
+    validity: `${formatDateDisplay(item.fromDate)} - ${formatDateDisplay(item.toDate)}`,
+    status: true,
+  }));
 
 
 
@@ -294,7 +300,7 @@ export default function VisitorsPage() {
   const columns: Column<Visitor>[] = [
     { key: 'sno', header: 'S.No' },
     { key: 'visitorName', header: 'Visitor Name' },
-    { key: 'userName', header: 'User Name' },
+    //{ key: 'userName', header: 'User Name' },
     { key: 'vehicleInfo', header: 'Vehicle Info' },
     { key: 'visitDetail', header: 'Visit Detail' },
     { key: 'validity', header: 'Validity' },

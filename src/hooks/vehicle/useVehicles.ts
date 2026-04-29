@@ -1,10 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { getAllExternalVehicles } from "../../services/vehicle.service";
 
-export const useVehicles = () => {
+export const useVehicles = (pageNumber: number, pageSize: number) => {
   return useQuery({
-    queryKey: ["vehicles"],
-    queryFn: getAllExternalVehicles,
-    staleTime: 5 * 60 * 1000,
+    queryKey: ["vehicles", pageNumber, pageSize],
+    queryFn: () => getAllExternalVehicles(pageNumber, pageSize),
   });
 };

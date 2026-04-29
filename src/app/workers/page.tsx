@@ -101,7 +101,7 @@ const workers =
     workerName: item.name || "-",
     jobType: item.jobType || "-",
     phone: item.phoneNo || "-",
-    dob: item.dateOfBirth || "-",
+    dob: item.dob || "-",
     cnicNicopNo: item.cnic || "-",
     policeVerification: item.policeVerification ? "Yes" : "No",
     workerCardDelivery: item.workerCardDeliveryType || "-",

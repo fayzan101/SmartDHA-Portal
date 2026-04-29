@@ -67,7 +67,7 @@ export default function LuggagePage() {
   const [localRemovedIds, setLocalRemovedIds] = useState<string[]>([]);
   const [formError, setFormError] = useState('');
 
-  const { data, isLoading, isError, error } = useLuggage();
+  const { data, isLoading, isError, error } = useLuggage(1, 10);
   const { mutateAsync: deleteLuggage, isPending: isDeleting } = useDeleteLuggage();
   const { mutateAsync: createLuggage } = useCreateLuggage();
   const { mutateAsync: updateLuggage } = useUpdateLuggage();
@@ -226,19 +226,26 @@ export default function LuggagePage() {
   // -----------------------------------------------------------------------
   // Data Transformation
   // -----------------------------------------------------------------------
-  const luggagePasses: LuggagePass[] = (data?.data || [])
-    .filter((item) => item && !localRemovedIds.includes(item.id))
-    .map((item, idx) => ({
-      sno: idx + 1,
-      id: item.id,
-      name: item.name,
-      userName: item.externalUserName || '-',
-      vehicleInfo: item.vehicleLicensePlate || '-',
-      visitDetail: toLuggagePassTypeLabel(item.luggagePassType),
-      validity: `${formatDateDisplay(item.validFrom)} - ${formatDateDisplay(item.validTo)}`,
-      cnicNicopNo: item.cnic,
-      status: item.isActive && !item.isDeleted,
-    }));
+  // STEP 1: extract correct arrays from API
+const rawList = [
+  ...(data?.data?.upcomingLuggage || []),
+  ...(data?.data?.previousLuggage || [])
+];
+
+// NOW filter + map CORRECTLY
+const luggagePasses: LuggagePass[] = rawList
+  .filter((item) => item && !localRemovedIds.includes(item.id))
+  .map((item, idx) => ({
+    sno: idx + 1,
+    id: item.id,
+    name: item.name,
+    userName: item.externalUserName || '-',
+    vehicleInfo: item.vehicleLicensePlate || '-',
+    visitDetail: toLuggagePassTypeLabel(item.luggagePassType),
+    validity: `${formatDateDisplay(item.validFrom)} - ${formatDateDisplay(item.validTo)}`,
+    cnicNicopNo: item.cnic,
+    status: item.isActive && !item.isDeleted,
+  }));
 
   // -----------------------------------------------------------------------
   // Event Handlers

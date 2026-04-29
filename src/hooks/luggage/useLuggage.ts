@@ -1,10 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { getAllLuggage } from "../../services/luggage.service";
 
-export const useLuggage = () => {
+export const useLuggage = (pageNumber: number, pageSize: number) => {
   return useQuery({
-    queryKey: ["luggage"],
-    queryFn: getAllLuggage,
-    staleTime: 5 * 60 * 1000,
+    queryKey: ["luggage", pageNumber, pageSize],
+    queryFn: () => getAllLuggage(pageNumber, pageSize),
   });
 };
