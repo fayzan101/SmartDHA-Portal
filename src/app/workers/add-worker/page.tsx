@@ -113,6 +113,7 @@ export default function AddNewWorker() {
         workerCardDeliveryType: toWorkerCardDeliveryType(data.cardDelivery),
         validFrom: toIsoDate(data.issueDate),
         validTo: toIsoDate(data.expiryDate),
+        isActive: true,
         createdBy,
         externalUserId,
       });

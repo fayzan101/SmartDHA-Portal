@@ -15,7 +15,6 @@ import { useDeleteWorker } from '../../hooks/workers/useDeleteWorker';
 import { formatDateDisplay } from '../../lib/dateUtils';
 import { workerFields } from './fields';
 import { getAllExternalUsers } from '../../services/user.service';
-import type { ExternalWorker } from '../../services/worker.service';
 import CircularButton from '../../components/ui/CircularButton';
 
 interface Worker {
@@ -37,7 +36,7 @@ interface Worker {
   sno?: number;
 }
 
-type SelectedWorkerRow = Pick<ExternalWorker, 'id'>;
+type SelectedWorkerRow = { id: string };
 
 const toJobTypeLabel = (jobType?: number) => {
   switch (jobType) {
@@ -67,7 +66,7 @@ export default function WorkersPage() {
   const [editWorkerId, setEditWorkerId] = useState<string | undefined>();
   const [hasCheckedId, setHasCheckedId] = useState(false);
 
-  const { data, isLoading, isError, error } = useWorkers();
+  const { data, isLoading, isError, error } = useWorkers(currentPage, 10);
   const { data: editWorkerDetails, isLoading: isEditWorkerLoading } = useWorkerById(editWorkerId);
   const { mutateAsync: deleteWorker, isPending: isDeleting } = useDeleteWorker();
   const { mutateAsync: createWorker } = useCreateWorker();
@@ -95,7 +94,7 @@ export default function WorkersPage() {
   }, [modalMode, modalId]);
 
 const workers =
-  (data?.data?.items ?? []).map((item, idx) => ({
+  (data?.data?.items ?? []).map((item: any, idx: number) => ({
     sno: idx + 1,
     id: item.id,
     workerName: item.name || "-",

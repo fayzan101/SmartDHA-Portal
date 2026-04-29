@@ -1,5 +1,83 @@
 import apiClient from "../lib/apiClient";
 
+export interface ExternalWorker {
+  id: string;
+  workerId?: string;
+  ser?: number;
+  jobType?: number;
+  cnic?: string;
+  name?: string;
+  phoneNo?: string;
+  phoneNumber?: string;
+  dob?: string;
+  dateOfBirth?: string;
+  fatherHusbandName?: string;
+  fatherOrHusbandName?: string;
+  policeVerification?: boolean;
+  workerCardDeliveryType?: number;
+  workerCardNumber?: string;
+  validFrom?: string;
+  validTo?: string;
+  cardStatus?: number;
+  isActive?: boolean;
+  externalUserId?: string;
+}
+
+export interface ApiResponse<T> {
+  statusCode?: number;
+  successMessage?: string | null;
+  errorMessage?: string | null;
+  data: T;
+}
+
+export interface CreateExternalWorkerRequest {
+  ser?: number;
+  jobType: number;
+  cnic: string;
+  name: string;
+  phoneNumber: string;
+  dateOfBirth: string;
+  cnicFront?: string;
+  cnicBack?: string;
+  profilePicture?: string;
+  fatherOrHusbandName: string;
+  policeVerification: boolean;
+  policeVerificationAttachment?: string;
+  workerCardDeliveryType: number;
+  workerCardNumber: string;
+  validFrom: string;
+  validTo: string;
+  cardStatus: number;
+  isActive: boolean;
+  externalUserId: string;
+  createdBy?: string;
+}
+
+export interface UpdateExternalWorkerRequest {
+  id?: string;
+  workerId?: string;
+  ser?: number;
+  jobType?: number;
+  cnic?: string;
+  name?: string;
+  phoneNumber?: string;
+  dateOfBirth?: string;
+  fatherOrHusbandName?: string;
+  policeVerification?: boolean;
+  workerCardDeliveryType?: number;
+  workerCardNumber?: string;
+  validFrom?: string;
+  validTo?: string;
+  cardStatus?: number;
+  isActive?: boolean;
+  lastModifiedBy?: string;
+  externalUserId?: string;
+}
+
+export type CreateExternalWorkerResponse = ApiResponse<ExternalWorker | null>;
+export type UpdateExternalWorkerResponse = ApiResponse<ExternalWorker | null>;
+export type DeleteExternalWorkerResponse = ApiResponse<ExternalWorker | null>;
+
 /* ---------------- GET ALL ---------------- */
 export const getAllExternalWorkers = async (pageNumber = 1, pageSize = 10) => {
   const { data } = await apiClient.post(

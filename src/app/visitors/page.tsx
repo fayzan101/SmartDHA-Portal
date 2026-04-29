@@ -21,16 +21,17 @@ import type { ExternalVisitorPass } from '../../services/visitor.service';
 
 interface Visitor {
   id: string;
-  name: string;
-  userName: string;
+  name?: string;
+  userName?: string;
+  visitorName?: string;
   vehicleInfo: string;
   visitDetail: string;
   validity: string;
   cnicNicopNo: string;
-  hostDetails: string;
+  hostDetails?: string;
   status: boolean;
   cardStatus?: number;
-  externalUserId: string;
+  externalUserId?: string;
   sno?: number;
 }
 
@@ -100,7 +101,7 @@ const visitors = rawVisitors
     visitorName: item.name || '-',       // ✅ FIX
     cnicNicopNo: item.cnic || '-',       // ✅ FIX
 
-    vehicleInfo: `${item.vehicleLicense || ''}-${item.vehicleLicenseNo || ''}`, // also fix here
+    vehicleInfo: `${item.vehicleLicensePlate || ''}${item.vehicleLicenseNo ? `-${item.vehicleLicenseNo}` : ''}`,
     visitDetail:
       item.visitorPassType === 'DayPass' || item.visitorPassType === 1
         ? 'Day Pass'
@@ -284,7 +285,7 @@ const visitors = rawVisitors
   };
 
   const handleHostClick = (row: Visitor) => {
-    const visitorData = (data?.data || []).find(v => v.id === row.id);
+    const visitorData = rawVisitors.find((v) => v.id === row.id);
     if (visitorData) {
       setSelectedHost({
         id: visitorData.externalUserId,
