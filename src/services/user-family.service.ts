@@ -28,11 +28,32 @@ export interface GetAllUserFamilyResponse {
 	errorMessage: string | null;
 	data: UserFamily[];
 }
-export const getAllUserFamily = async (): Promise<UserFamily[]> => {
-	const response = await apiClient.get<GetAllUserFamilyResponse>(
-		"/userfamily/GetAllUserFamily"
-	);
-	return response.data.data;
+export interface UserFamilyMember {
+  id: string;
+  name: string;
+  relation: number;
+  phone: string;
+  dob: string;
+  cnic?: string;
+  fatherOrHusbandName?: string;
+  residentCardNumber?: string;
+  validFrom?: string;
+  validTo?: string;
+}
+
+export interface UserFamilyGroup {
+  userId: string;
+  userName: string;
+  familyMembers: UserFamilyMember[];
+}
+export const getAllUserFamily = async () => {
+  const response = await apiClient.post(
+    "/api/smartdha/userfamily/get-all-users",
+    {}
+  );
+
+  // IMPORTANT: return ONLY items array
+  return response.data.data.items;
 };
 export const removeUserFamily = async (id: string): Promise<any> => {
 	const response = await apiClient.post(
