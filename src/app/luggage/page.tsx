@@ -21,6 +21,7 @@ import { formatDateDisplay } from '../../lib/dateUtils';
 import { luggageFields } from './fields';
 import { getAllExternalUsers } from '../../services/user.service';
 import type { Luggage } from '../../services/luggage.service';
+import { Eye } from 'lucide-react';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -67,7 +68,7 @@ export default function LuggagePage() {
   const [localRemovedIds, setLocalRemovedIds] = useState<string[]>([]);
   const [formError, setFormError] = useState('');
 
-  const { data, isLoading, isError, error } = useLuggage();
+  const { data, isLoading, isError, error } = useLuggage(1, 10);
   const { mutateAsync: deleteLuggage, isPending: isDeleting } = useDeleteLuggage();
   const { mutateAsync: createLuggage } = useCreateLuggage();
   const { mutateAsync: updateLuggage } = useUpdateLuggage();
@@ -76,6 +77,8 @@ export default function LuggagePage() {
   const [editLuggageId, setEditLuggageId] = useState<string | undefined>();
   const [hasCheckedId, setHasCheckedId] = useState(false);
   const { data: editLuggageDetails, isLoading: isEditLuggageLoading } = useLuggageById(editLuggageId);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<LuggagePass | null>(null);
 
   // Detect modal state from URL
   const modalMode = searchParams?.get('modal');
@@ -136,6 +139,10 @@ export default function LuggagePage() {
     setHasCheckedId(false);
     setFormError('');
     router.push('/luggage');
+  };
+  const handleView = (luggage: LuggagePass) => {
+  setSelectedRow(luggage);
+  setViewModalOpen(true);
   };
 
   // -----------------------------------------------------------------------
@@ -226,19 +233,26 @@ export default function LuggagePage() {
   // -----------------------------------------------------------------------
   // Data Transformation
   // -----------------------------------------------------------------------
-  const luggagePasses: LuggagePass[] = (data?.data || [])
-    .filter((item) => item && !localRemovedIds.includes(item.id))
-    .map((item, idx) => ({
-      sno: idx + 1,
-      id: item.id,
-      name: item.name,
-      userName: item.externalUserName || '-',
-      vehicleInfo: item.vehicleLicensePlate || '-',
-      visitDetail: toLuggagePassTypeLabel(item.luggagePassType),
-      validity: `${formatDateDisplay(item.validFrom)} - ${formatDateDisplay(item.validTo)}`,
-      cnicNicopNo: item.cnic,
-      status: item.isActive && !item.isDeleted,
-    }));
+  // STEP 1: extract correct arrays from API
+const rawList = [
+  ...(data?.data?.upcomingLuggage || []),
+  ...(data?.data?.previousLuggage || [])
+];
+
+// NOW filter + map CORRECTLY
+const luggagePasses: LuggagePass[] = rawList
+  .filter((item) => item && !localRemovedIds.includes(item.id))
+  .map((item, idx) => ({
+    sno: idx + 1,
+    id: item.id,
+    name: item.name,
+    userName: item.externalUserName || '-',
+    vehicleInfo: item.vehicleLicensePlate || '-',
+    visitDetail: toLuggagePassTypeLabel(item.luggagePassType),
+    validity: `${formatDateDisplay(item.validFrom)} - ${formatDateDisplay(item.validTo)}`,
+    cnicNicopNo: item.cnic,
+    status: item.isActive && !item.isDeleted,
+  }));
 
   // -----------------------------------------------------------------------
   // Event Handlers
@@ -292,27 +306,29 @@ export default function LuggagePage() {
       render: (value: boolean) => <StatusBadge type="activeInactive" value={value} />,
     },
     {
-      key: 'action',
-      header: 'Action',
-      render: (_, row) => (
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <CircularButton
-            imagePath="/icons/Edit Button.svg"
-            imageAlt="Edit"
-            width={32}
-            height={32}
-            onClick={() => handleEdit(row)}
-          />
-          <CircularButton
-            imagePath="/icons/DeleteButton.svg"
-            imageAlt="Delete"
-            width={32}
-            height={32}
-            onClick={() => handleDelete(row)}
-          />
-        </div>
-      ),
-    },
+  key: 'action',
+  header: 'Action',
+  render: (_, row) => (
+    <div style={{ display: 'flex', gap: '6px' }}>
+      <button
+        onClick={() => handleView(row)}
+        style={{
+          width: 32,
+          height: 32,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 8,
+          border: "1px solid #ddd",
+          background: "white",
+          cursor: "pointer"
+        }}
+      >
+        <Eye size={18} />
+      </button>
+    </div>
+  ),
+}
   ];
 
   // -----------------------------------------------------------------------
@@ -378,7 +394,82 @@ export default function LuggagePage() {
           <div style={{ padding: '20px', textAlign: 'center' }}>Error loading luggage details</div>
         )}
       </FormModal>
+      <FormModal
+  isOpen={viewModalOpen}
+  onClose={() => {
+    setViewModalOpen(false);
+    setSelectedRow(null);
+  }}
+  title="Luggage Details"
+>
+  {selectedRow ? (
+    <div
+      style={{
+        width: "380px",
+        maxWidth: "90vw",
+        margin: "0 auto",
+        display: "grid",
+        gap: "10px",
+        padding: "10px 0",
+      }}
+    >
+      {[
+        { label: "Name", value: selectedRow.name },
+        { label: "User Name", value: selectedRow.userName },
+        { label: "Vehicle Info", value: selectedRow.vehicleInfo },
+        { label: "Pass Type", value: selectedRow.visitDetail },
+        { label: "Validity", value: selectedRow.validity },
+        { label: "CNIC", value: selectedRow.cnicNicopNo },
+        {
+          label: "Status",
+          value: selectedRow.status ? "Active" : "Inactive",
+        },
+      ].map((item, i) => (
+        <div
+          key={i}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "10px 12px",
+            borderRadius: "10px",
+            background: "#f9fafb",
+            border: "1px solid #eef2f7",
+          }}
+        >
+          {/* LABEL */}
+          <span
+            style={{
+              color: "#16a34a",
+              fontWeight: 600,
+              fontSize: "13px",
+            }}
+          >
+            {item.label}
+          </span>
 
+          {/* VALUE */}
+          <span
+            style={{
+              color: "#111827",
+              fontWeight: 500,
+              fontSize: "13px",
+              textAlign: "right",
+              flex: 1,
+              wordBreak: "break-word",
+            }}
+          >
+            {item.value || "-"}
+          </span>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div style={{ textAlign: "center", padding: "20px" }}>
+      No data selected
+    </div>
+  )}
+</FormModal>
       {/* Delete Confirmation Modal */}
       <WarningModal
         isOpen={deleteModalOpen}

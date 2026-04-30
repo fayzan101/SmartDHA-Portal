@@ -1,13 +1,13 @@
 import styles from "./DashboardComponents.module.css";
-import { useSyncSummary } from "../../../hooks/dashboard/useSyncSummary";
+import { useDashboardCount } from "../../../hooks/dashboard/useDashboardCount";
 
 export default function StatsCards() {
-  const { data, isLoading, isError } = useSyncSummary();
+  const { data, isLoading, isError } = useDashboardCount();
 
   const syncStats = [
-    { title: "Total Workers", value: data?.data.totalRecords ?? "-", iconPath: "/icons/Stats/Stats.CPAgents.svg", iconAlt: "Total Records" },
-    { title: "Total Residents", value: data?.data.totalSuccess ?? "-", iconPath: "/icons/Stats/Stats.Member.svg", iconAlt: "Total Success" },
-    { title: "Total Properties", value: data?.data.totalFailed ?? "-", iconPath: "/icons/Stats/Stats.Active.svg", iconAlt: "Total Failed" },
+    { title: "Total Workers", value: data?.totalWorkers ?? "-", iconPath: "/icons/Stats/Stats.CPAgents.svg", iconAlt: "Total Workers" },
+    { title: "Total Residents", value: data?.totalResidents ?? "-", iconPath: "/icons/Stats/Stats.Member.svg", iconAlt: "Total Residents" },
+    { title: "Total Properties", value: data?.totalProperties ?? "-", iconPath: "/icons/Stats/Stats.Active.svg", iconAlt: "Total Properties" },
   ];
 
   return (

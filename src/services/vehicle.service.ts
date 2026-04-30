@@ -71,10 +71,30 @@ export type CreateExternalVehicleResponse = ApiResponse<ExternalVehicle | null>;
 export type UpdateExternalVehicleResponse = ApiResponse<ExternalVehicle | null>;
 export type DeleteExternalVehicleResponse = ApiResponse<ExternalVehicle | null>;
 export type GetExternalVehicleByIdResponse = ApiResponse<ExternalVehicle | null>;
-export type GetAllExternalVehicleResponse = ApiResponse<ExternalVehicle[] | null>;
+export interface VehicleGroup {
+  userId: string;
+  userName: string;
+  vehicles: ExternalVehicle[];
+}
 
-export const getAllExternalVehicles = async (): Promise<GetAllExternalVehicleResponse> => {
-  const { data } = await apiClient.get<GetAllExternalVehicleResponse>("/vehicle/GetAllVehicle");
+export interface GetAllExternalVehicleData {
+  items: VehicleGroup[];
+}
+
+export type GetAllExternalVehicleResponse = {
+  success: boolean;
+  message: string;
+  data: GetAllExternalVehicleData;
+};
+
+export const getAllExternalVehicles = async (
+  pageNumber = 1,
+  pageSize = 10
+): Promise<GetAllExternalVehicleResponse> => {
+  const { data } = await apiClient.post<GetAllExternalVehicleResponse>(
+    "/api/smartdha/vehicle/get-all-vehicles",
+    { pageNumber, pageSize }
+  );
   return data;
 };
 

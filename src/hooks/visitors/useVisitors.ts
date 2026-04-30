@@ -1,10 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { getAllExternalVisitorPass } from "../../services/visitor.service";
 
-export const useVisitors = () => {
+export const useVisitors = (pageNumber: number, pageSize: number) => {
   return useQuery({
-    queryKey: ["visitors"],
-    queryFn: getAllExternalVisitorPass,
-    staleTime: 5 * 60 * 1000,
+    queryKey: ["visitors", pageNumber, pageSize],
+    queryFn: () => getAllExternalVisitorPass(pageNumber, pageSize),
   });
 };

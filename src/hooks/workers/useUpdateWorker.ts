@@ -8,13 +8,17 @@ import {
 export const useUpdateWorker = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<UpdateExternalWorkerResponse, unknown, UpdateExternalWorkerRequest>({
-    mutationFn: (payload) => updateExternalWorker(payload),
+  return useMutation({
+    mutationFn: updateExternalWorker,
     onSuccess: (response) => {
-      const workerId = response.data?.id;
+      const workerId = response.data?.workerId;
+
       queryClient.invalidateQueries({ queryKey: ["workers"] });
+
       if (workerId) {
-        queryClient.invalidateQueries({ queryKey: ["worker", workerId] });
+        queryClient.invalidateQueries({
+          queryKey: ["worker", workerId],
+        });
       }
     },
   });

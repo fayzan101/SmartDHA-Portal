@@ -22,7 +22,7 @@ export const getAllUsers = async (): Promise<GetAllUsersResponse> => {
 	return response.data;
 };
 export const login = async (data: LoginRequest): Promise<LoginResponse> => {
-	const response = await apiClient.post<LoginResponse>("/auth/login", data);
+	const response = await apiClient.post("/api/smartdha/user/login", data);
 	return response.data;
 };
 export const register = async (data: RegisterRequest): Promise<RegisterResponse> => {

@@ -11,6 +11,8 @@ export interface ExternalVisitorPass {
   visitorPassType: string | number;
   validFrom: string;
   validTo: string;
+  fromDate: string;
+  toDate: string; 
   qrCode: string;
   pdfFilePath: string;
   externalUserId: string;
@@ -61,11 +63,26 @@ export type CreateExternalVisitorPassResponse = ApiResponse<ExternalVisitorPass 
 export type UpdateExternalVisitorPassResponse = ApiResponse<ExternalVisitorPass | null>;
 export type DeleteExternalVisitorPassResponse = ApiResponse<ExternalVisitorPass | null>;
 export type GetExternalVisitorPassByIdResponse = ApiResponse<ExternalVisitorPass | null>;
-export type GetAllExternalVisitorPassResponse = ApiResponse<ExternalVisitorPass[] | null>;
+export interface VisitorData {
+  success: boolean;
+  message: string;
+  upcomingVisitors: ExternalVisitorPass[];
+  previousVisitors: ExternalVisitorPass[];
+}
 
-export const getAllExternalVisitorPass = async (): Promise<GetAllExternalVisitorPassResponse> => {
-  const { data } = await apiClient.get<GetAllExternalVisitorPassResponse>(
-    "/visitors/GetAllVisitorPass"
+export type GetAllExternalVisitorPassResponse = {
+  success: boolean;
+  message: string;
+  data: VisitorData;
+};
+
+export const getAllExternalVisitorPass = async (
+  pageNumber = 1,
+  pageSize = 10
+): Promise<GetAllExternalVisitorPassResponse> => {
+  const { data } = await apiClient.post(
+    "/api/smartdha/visitorpass/get-all-visitors",
+    { pageNumber, pageSize }
   );
   return data;
 };

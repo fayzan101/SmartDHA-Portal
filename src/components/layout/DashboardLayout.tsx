@@ -127,7 +127,7 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
             onClick={() => setMemberTypeOpen(!memberTypeOpen)}
             style={{ cursor: 'pointer' }}
           >
-            <span>Member Type</span>
+            <span>Member Services</span>
             <img 
               src="/icons/Arrow.png" 
               alt="" 
@@ -140,7 +140,7 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
                 href="/user" 
                 className={`${(activeMenuItem === '/user' || activeMenuItem.startsWith('/user/')) ? styles.menuItemActive : ''} ${styles.menuItem}`}
               >
-                <span>User</span>
+                <span>Member Type</span>
                 <img src={getMenuIcon('/user', (activeMenuItem === '/user' || activeMenuItem.startsWith('/user/')))} alt="" className={styles.menuIconImg} />
               </Link>
               <Link 

@@ -15,8 +15,8 @@ import { useDeleteWorker } from '../../hooks/workers/useDeleteWorker';
 import { formatDateDisplay } from '../../lib/dateUtils';
 import { workerFields } from './fields';
 import { getAllExternalUsers } from '../../services/user.service';
-import type { ExternalWorker } from '../../services/worker.service';
 import CircularButton from '../../components/ui/CircularButton';
+import { Eye } from 'lucide-react';
 
 interface Worker {
   id: string;
@@ -37,7 +37,7 @@ interface Worker {
   sno?: number;
 }
 
-type SelectedWorkerRow = Pick<ExternalWorker, 'id'>;
+type SelectedWorkerRow = { id: string };
 
 const toJobTypeLabel = (jobType?: number) => {
   switch (jobType) {
@@ -67,14 +67,15 @@ export default function WorkersPage() {
   const [editWorkerId, setEditWorkerId] = useState<string | undefined>();
   const [hasCheckedId, setHasCheckedId] = useState(false);
 
-  const { data, isLoading, isError, error } = useWorkers();
+  const { data, isLoading, isError, error } = useWorkers(currentPage, 10);
   const { data: editWorkerDetails, isLoading: isEditWorkerLoading } = useWorkerById(editWorkerId);
   const { mutateAsync: deleteWorker, isPending: isDeleting } = useDeleteWorker();
   const { mutateAsync: createWorker } = useCreateWorker();
   const { mutateAsync: updateWorker } = useUpdateWorker();
 
   const [formError, setFormError] = useState('');
-
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<Worker | null>(null);
   const modalMode = searchParams?.get('modal');
   const modalId = searchParams?.get('id');
 
@@ -94,29 +95,22 @@ export default function WorkersPage() {
     }
   }, [modalMode, modalId]);
 
-  const workers: Worker[] = (data?.data || [])
-    .filter((item) => item && !localRemovedIds.includes(item.id))
-    .map((item, idx) => ({
-      sno: idx + 1,
-      id: item.id,
-      workerName: item.name || '-',
-      userName: item.externalUserName || '-',
-      fatherOrHusbandName: item.fatherOrHusbandName || '-',
-      jobType:
-        typeof item.jobType === 'string'
-          ? item.jobType
-          : toJobTypeLabel(item.jobType),
-      phone: item.phoneNumber || '-',
-      dob: formatDateDisplay(item.dateOfBirth),
-      cnicNicopNo: item.cnic || '-',
-      policeVerification: item.policeVerification ? 'Yes' : 'No',
-      workerCardDelivery: item.workerCardDeliveryType?.toString() || '-',
-      workerStatus: !!(item.isActive && !item.isDeleted),
-      workerCard: item.workerCardNumber || '-',
-      issuedDate: formatDateDisplay(item.validFrom),
-      expiryDate: formatDateDisplay(item.validTo),
-      cardStatus: item.cardStatus,
-    }));
+const workers =
+  (data?.data?.items ?? []).map((item: any, idx: number) => ({
+    sno: idx + 1,
+    id: item.id,
+    workerName: item.name || "-",
+    jobType: item.jobType || "-",
+    phone: item.phoneNo || "-",
+    dob: item.dob || "-",
+    cnicNicopNo: item.cnic || "-",
+    policeVerification: item.policeVerification ? "Yes" : "No",
+    workerCardDelivery: item.workerCardDeliveryType || "-",
+    workerStatus: item.isActive ?? false,
+    workerCard: item.workerCardNumber || "-",
+    issuedDate: item.validFrom || "-",
+    expiryDate: item.validTo || "-",
+  }));
 
 
   const handleAddNew = () => {
@@ -127,7 +121,10 @@ export default function WorkersPage() {
     saveTableRow('workers', { id: worker.id });
     router.push(`/workers?modal=edit&id=${encodeURIComponent(worker.id)}`);
   };
-
+  const handleView = (worker: Worker) => {
+  setSelectedRow(worker);
+  setViewModalOpen(true);
+  };
   const handleCloseModal = () => {
     setEditWorkerId(undefined);
     setHasCheckedId(false);
@@ -313,7 +310,7 @@ export default function WorkersPage() {
       header: 'S.No',
     },
     { key: 'workerName', header: 'Worker Name' },
-    { key: 'userName', header: 'User Name' },
+    //{ key: 'userName', header: 'User Name' },
     { key: 'jobType', header: 'Job Type' },
     { key: 'phone', header: 'Phone' },
     { key: 'dob', header: 'DOB' },
@@ -335,15 +332,29 @@ export default function WorkersPage() {
       render: (value: number) => <StatusBadge type="tagStatus" value={value} />
     },
     {
-      key: 'action',
-      header: 'Action',
-      render: (_, row) => (
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <CircularButton imagePath="/icons/Edit Button.svg" imageAlt="Edit" width={32} height={32} onClick={() => handleEdit(row)} />
-          <CircularButton imagePath="/icons/DeleteButton.svg" imageAlt="Delete" width={32} height={32} onClick={() => handleDelete(row)} />
-        </div>
-      )
-    },
+  key: 'action',
+  header: 'Action',
+  render: (_, row) => (
+    <div style={{ display: 'flex', gap: '6px' }}>
+      <button
+        onClick={() => handleView(row)}
+        style={{
+          width: 32,
+          height: 32,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 8,
+          border: "1px solid #ddd",
+          background: "white",
+          cursor: "pointer"
+        }}
+      >
+        <Eye size={18} />
+      </button>
+    </div>
+  ),
+}
   ];
 
   return (
@@ -399,7 +410,84 @@ export default function WorkersPage() {
           <div style={{ padding: '20px', textAlign: 'center' }}>Error loading worker details</div>
         )}
       </FormModal>
+      <FormModal
+  isOpen={viewModalOpen}
+  onClose={() => {
+    setViewModalOpen(false);
+    setSelectedRow(null);
+  }}
+  title="Worker Details"
+>
+  {selectedRow ? (
+    <div
+      style={{
+        width: "380px",
+        maxWidth: "90vw",
+        margin: "0 auto",
+        display: "grid",
+        gap: "10px",
+        padding: "10px 0",
+      }}
+    >
+      {[
+        { label: "Worker Name", value: selectedRow.workerName },
+        { label: "Job Type", value: selectedRow.jobType },
+        { label: "Phone", value: selectedRow.phone },
+        { label: "DOB", value: selectedRow.dob },
+        { label: "CNIC", value: selectedRow.cnicNicopNo },
+        { label: "Police Verification", value: selectedRow.policeVerification },
+        { label: "Worker Card", value: selectedRow.workerCard },
+        { label: "Issued Date", value: selectedRow.issuedDate },
+        { label: "Expiry Date", value: selectedRow.expiryDate },
+        {
+          label: "Status",
+          value: selectedRow.workerStatus ? "Active" : "Inactive",
+        },
+        { label: "Card Status", value: selectedRow.cardStatus ?? "-" },
+      ].map((item, i) => (
+        <div
+          key={i}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "10px 12px",
+            borderRadius: "10px",
+            background: "#f9fafb",
+            border: "1px solid #eef2f7",
+          }}
+        >
+          <span
+            style={{
+              color: "#16a34a",
+              fontWeight: 600,
+              fontSize: "13px",
+            }}
+          >
+            {item.label}
+          </span>
 
+          <span
+            style={{
+              color: "#111827",
+              fontWeight: 500,
+              fontSize: "13px",
+              textAlign: "right",
+              flex: 1,
+              wordBreak: "break-word",
+            }}
+          >
+            {item.value || "-"}
+          </span>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div style={{ textAlign: "center", padding: "20px" }}>
+      No data selected
+    </div>
+  )}
+</FormModal>
       <WarningModal
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}

@@ -18,19 +18,21 @@ import { formatDateDisplay } from '../../lib/dateUtils';
 import { visitorFields } from './fields';
 import { getAllExternalUsers } from '../../services/user.service';
 import type { ExternalVisitorPass } from '../../services/visitor.service';
+import { Eye } from 'lucide-react';
 
 interface Visitor {
   id: string;
-  visitorName: string;
-  userName: string;
+  name?: string;
+  userName?: string;
+  visitorName?: string;
   vehicleInfo: string;
   visitDetail: string;
   validity: string;
   cnicNicopNo: string;
-  hostDetails: string;
+  hostDetails?: string;
   status: boolean;
   cardStatus?: number;
-  externalUserId: string;
+  externalUserId?: string;
   sno?: number;
 }
 
@@ -57,7 +59,7 @@ export default function VisitorsPage() {
   const [editVisitorId, setEditVisitorId] = useState<string | undefined>();
   const [hasCheckedId, setHasCheckedId] = useState(false);
 
-  const { data, isLoading, isError, error } = useVisitors();
+  const { data, isLoading, isError, error } = useVisitors(currentPage, 10);
   const { data: editVisitorDetails, isLoading: isEditVisitorLoading } = useVisitorById(editVisitorId);
   const { mutateAsync: deleteVisitor, isPending: isDeleting } = useDeleteVisitor();
   const { mutateAsync: createVisitor } = useCreateVisitor();
@@ -67,6 +69,8 @@ export default function VisitorsPage() {
 
   const modalMode = searchParams?.get('modal');
   const modalId = searchParams?.get('id');
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<Visitor | null>(null);
 
   useEffect(() => {
     if (modalMode === 'edit') {
@@ -86,29 +90,38 @@ export default function VisitorsPage() {
 
   console.log('Fetched visitors data:', data);
 
-  const visitors: Visitor[] = (data?.data || [])
-    .filter((item) => item && !localRemovedIds.includes(item.id))
-    .map((item, idx) => ({
-      sno: idx + 1,
-      id: item.id,
-      visitorName: item.name,
-      userName: item.externalUserName || '-',
-      vehicleInfo: `${item.vehicleLicensePlate}`,
-      visitDetail: toVisitorPassTypeLabel(item.visitorPassType),
-      validity: `${formatDateDisplay(item.validFrom)} - ${formatDateDisplay(item.validTo)}`,
-      cnicNicopNo: item.cnic,
-      hostDetails: item.externalUserName || 'host',
-      status: item.isActive && !item.isDeleted,
-      cardStatus: item.cardStatus,
-      externalUserId: item.externalUserId,
-    }));
+  const rawVisitors = [
+  ...(data?.data?.upcomingVisitors || []),
+  ...(data?.data?.previousVisitors || [])
+];
+
+const visitors = rawVisitors
+  .filter((item) => item && !localRemovedIds.includes(item.id))
+  .map((item, idx) => ({
+    sno: idx + 1,
+    id: item.id,
+
+    visitorName: item.name || '-',       // ✅ FIX
+    cnicNicopNo: item.cnic || '-',       // ✅ FIX
+
+    vehicleInfo: `${item.vehicleLicensePlate || ''}${item.vehicleLicenseNo ? `-${item.vehicleLicenseNo}` : ''}`,
+    visitDetail:
+      item.visitorPassType === 'DayPass' || item.visitorPassType === 1
+        ? 'Day Pass'
+        : 'Long Stay',
+    validity: `${formatDateDisplay(item.fromDate)} - ${formatDateDisplay(item.toDate)}`,
+    status: true,
+  }));
 
 
 
   const handleAddNew = () => {
     router.push('/visitors?modal=add');
   };
-
+  const handleView = (visitor: Visitor) => {
+  setSelectedRow(visitor);
+  setViewModalOpen(true);
+  };
   const handleEdit = (visitor: Visitor) => {
     saveTableRow('visitors', { id: visitor.id });
     router.push(`/visitors?modal=edit&id=${encodeURIComponent(visitor.id)}`);
@@ -278,7 +291,7 @@ export default function VisitorsPage() {
   };
 
   const handleHostClick = (row: Visitor) => {
-    const visitorData = (data?.data || []).find(v => v.id === row.id);
+    const visitorData = rawVisitors.find((v) => v.id === row.id);
     if (visitorData) {
       setSelectedHost({
         id: visitorData.externalUserId,
@@ -294,7 +307,7 @@ export default function VisitorsPage() {
   const columns: Column<Visitor>[] = [
     { key: 'sno', header: 'S.No' },
     { key: 'visitorName', header: 'Visitor Name' },
-    { key: 'userName', header: 'User Name' },
+    //{ key: 'userName', header: 'User Name' },
     { key: 'vehicleInfo', header: 'Vehicle Info' },
     { key: 'visitDetail', header: 'Visit Detail' },
     { key: 'validity', header: 'Validity' },
@@ -317,15 +330,29 @@ export default function VisitorsPage() {
       render: (value: boolean) => <StatusBadge type="activeInactive" value={value} />,
     },
     {
-      key: 'action',
-      header: 'Action',
-      render: (_, row) => (
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <CircularButton imagePath="/icons/Edit Button.svg" imageAlt="Edit" width={32} height={32} onClick={() => handleEdit(row)} />
-          <CircularButton imagePath="/icons/DeleteButton.svg" imageAlt="Delete" width={32} height={32} onClick={() => handleDelete(row)} />
-        </div>
-      ),
-    },
+  key: 'action',
+  header: 'Action',
+  render: (_, row) => (
+    <div style={{ display: 'flex', gap: '6px' }}>
+      <button
+        onClick={() => handleView(row)}
+        style={{
+          width: 32,
+          height: 32,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 8,
+          border: "1px solid #ddd",
+          background: "white",
+          cursor: "pointer"
+        }}
+      >
+        <Eye size={18} />
+      </button>
+    </div>
+  ),
+}
   ];
 
   return (
@@ -381,7 +408,76 @@ export default function VisitorsPage() {
           <div style={{ padding: '20px', textAlign: 'center' }}>Error loading visitor details</div>
         )}
       </FormModal>
+      <FormModal
+  isOpen={viewModalOpen}
+  onClose={() => {
+    setViewModalOpen(false);
+    setSelectedRow(null);
+  }}
+  title="Visitor Details"
+>
+  {selectedRow ? (
+    <div
+      style={{
+        width: "380px",
+        maxWidth: "90vw",
+        margin: "0 auto",
+        display: "grid",
+        gap: "10px",
+        padding: "10px 0",
+      }}
+    >
+      {[
+        { label: "Visitor Name", value: selectedRow.visitorName },
+        { label: "CNIC", value: selectedRow.cnicNicopNo },
+        { label: "Vehicle Info", value: selectedRow.vehicleInfo },
+        { label: "Visit Detail", value: selectedRow.visitDetail },
+        { label: "Validity", value: selectedRow.validity },
+        { label: "Status", value: selectedRow.status ? "Active" : "Inactive" },
+      ].map((item, i) => (
+        <div
+          key={i}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "10px 12px",
+            borderRadius: "10px",
+            background: "#f9fafb",
+            border: "1px solid #eef2f7",
+          }}
+        >
+          <span
+            style={{
+              color: "#16a34a",
+              fontWeight: 600,
+              fontSize: "13px",
+            }}
+          >
+            {item.label}
+          </span>
 
+          <span
+            style={{
+              color: "#111827",
+              fontWeight: 500,
+              fontSize: "13px",
+              textAlign: "right",
+              flex: 1,
+              wordBreak: "break-word",
+            }}
+          >
+            {item.value || "-"}
+          </span>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div style={{ textAlign: "center", padding: "20px" }}>
+      No data selected
+    </div>
+  )}
+</FormModal>
       <HostDetailsModal open={hostModalOpen} onClose={() => setHostModalOpen(false)} host={selectedHost || { id: '', name: '', phone: '', address: '', imageUrl: '' }} />
       <WarningModal
         isOpen={deleteModalOpen}

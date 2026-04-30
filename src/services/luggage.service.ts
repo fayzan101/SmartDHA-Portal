@@ -67,10 +67,25 @@ export type CreateLuggageResponse = ApiResponse<Luggage | null>;
 export type UpdateLuggageResponse = ApiResponse<Luggage | null>;
 export type DeleteLuggageResponse = ApiResponse<Luggage | null>;
 export type GetLuggageByIdResponse = ApiResponse<Luggage | null>;
-export type GetAllLuggageResponse = ApiResponse<Luggage[] | null>;
+export interface GetAllLuggageData {
+  userId: string;
+  userName: string;
+  upcomingLuggage: Luggage[];
+  previousLuggage: Luggage[];
+}
 
-export const getAllLuggage = async (): Promise<GetAllLuggageResponse> => {
-  const { data } = await apiClient.get<GetAllLuggageResponse>("/luggage/GetAllLuggagePass");
+export type GetAllLuggageResponse = {
+  success: boolean;
+  message: string;
+  data: GetAllLuggageData;
+};
+
+export const getAllLuggage = async (pagenumber = 1, pageSize = 10): Promise<GetAllLuggageResponse> => {
+  const { data } = await apiClient.post(
+    "api/smartdha/luggagepass/getall",
+    { pagenumber, pageSize }
+  );
+
   return data;
 };
 
