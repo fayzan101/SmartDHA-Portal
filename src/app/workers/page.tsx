@@ -96,21 +96,24 @@ export default function WorkersPage() {
   }, [modalMode, modalId]);
 
 const workers =
-  (data?.data?.items ?? []).map((item: any, idx: number) => ({
-    sno: idx + 1,
-    id: item.id,
-    workerName: item.name || "-",
-    jobType: item.jobType || "-",
-    phone: item.phoneNo || "-",
-    dob: item.dob || "-",
-    cnicNicopNo: item.cnic || "-",
-    policeVerification: item.policeVerification ? "Yes" : "No",
-    workerCardDelivery: item.workerCardDeliveryType || "-",
-    workerStatus: item.isActive ?? false,
-    workerCard: item.workerCardNumber || "-",
-    issuedDate: item.validFrom || "-",
-    expiryDate: item.validTo || "-",
-  }));
+  (data?.data?.items ?? []).flatMap((user: any, userIdx: number) =>
+    (user.workers ?? []).map((w: any, idx: number) => ({
+      sno: userIdx * 100 + idx + 1,
+      id: w.workerId,   // IMPORTANT FIX
+      workerName: w.name || "-",
+      jobType: w.jobType || "-",
+      phone: w.phoneNo || "-",
+      dob: w.dob || "-",
+      cnicNicopNo: w.cnic || "-",
+      policeVerification: w.policeVerification ? "Yes" : "No",
+      workerCardDelivery: w.workerCardDeliveryType || "-",
+      workerStatus: w.isActive ?? false,
+      workerCard: w.workerCardNo || "-",
+      issuedDate: w.validFrom || "-",
+      expiryDate: w.validTo || "-",
+      cardStatus: w.cardStatus ?? 0,
+    }))
+  );
 
 
   const handleAddNew = () => {
