@@ -21,7 +21,7 @@ export default function ContactSupportPage() {
         <div style={{ display: 'flex', width: '100%', height: '100%', maxHeight: 'calc(100vh - 40px)', borderRadius: '16px', overflow: 'hidden', background: '#f4f4f4' }}>
 
           {/* Left - Image */}
-          <div style={{ position: 'relative', width: '70%', flexShrink: 0, overflow: 'hidden' }}>
+          <div style={{ position: 'relative', width: '60%', flexShrink: 0, overflow: 'hidden' }}>
             <Image loading="eager" src="/images/contact.png" alt="DHA Karachi" fill sizes="70vw" style={{ objectFit: 'cover', objectPosition: 'center' }} />
             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%)', padding: '24px 20px 18px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

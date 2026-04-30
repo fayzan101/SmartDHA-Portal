@@ -10,9 +10,17 @@ export interface SyncSummaryResponse {
     totalPendingRetry: number;
   };
 }
-export const getSyncSummary = async (): Promise<SyncSummaryResponse> => {
-  const response = await apiClient.get<SyncSummaryResponse>(
-    "/dashboard/sync-summary"
+export interface DashboardCountResponse {
+  totalWorkers: number;
+  totalResidents: number;
+  totalProperties: number;
+  totalVehicles: number;
+}
+
+export const getDashboardCount = async (): Promise<DashboardCountResponse> => {
+  const response = await apiClient.post<DashboardCountResponse>(
+    "/api/smartdha/dashboard/dashboard-count",
+    {}
   );
   return response.data;
 };

@@ -18,12 +18,19 @@ import { vehicleFields } from './fields';
 import { getEnumMetadata } from '../../services/enum.service';
 import { getAllExternalUsers } from '../../services/user.service';
 import type { ExternalVehicle as BaseExternalVehicle } from '../../services/vehicle.service';
+import { Eye } from "lucide-react";
 
 // Extend ExternalVehicle to include externalUserName
 interface ExternalVehicle extends BaseExternalVehicle {
   externalUserName?: string;
 }
-
+interface FormModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+  width?: string; // ✅ add this
+}
 interface Vehicle {
   id: string;
   licensePlate: string;
@@ -85,6 +92,8 @@ export default function VehiclePage() {
 
   const modalMode = searchParams?.get('modal');
   const modalId = searchParams?.get('id');
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<Vehicle | null>(null);
 
   useEffect(() => {
     if (modalMode === 'edit') {
@@ -162,7 +171,10 @@ const vehicles: Vehicle[] = rawVehicles
     color: item.color || '-',
     tagStatus: item.tagStatus ?? null,
   }));
-
+  const handleView = (vehicle: Vehicle) => {
+  setSelectedRow(vehicle);
+  setViewModalOpen(true);
+  };
 
   const handleAddNew = () => {
     router.push('/vehicle?modal=add');
@@ -345,16 +357,30 @@ const vehicles: Vehicle[] = rawVehicles
       header: 'Tag Status',
       render: (value: number | null) => <StatusBadge type="tagStatus" value={value} />,
     },
-    { 
-      key: 'action', 
-      header: 'Action',
-      render: (_, row) => (
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <CircularButton imagePath="/icons/Edit Button.svg" imageAlt="Edit" width={32} height={32} onClick={() => handleEdit(row)} />
-          <CircularButton imagePath="/icons/DeleteButton.svg" imageAlt="Delete" width={32} height={32} onClick={() => handleDelete(row)} />
-        </div>
-      )
-    },
+    {
+  key: 'action',
+  header: 'Action',
+  render: (_, row) => (
+    <div style={{ display: 'flex', gap: '6px' }}>
+      <button
+        onClick={() => handleView(row)}
+        style={{
+          width: 32,
+          height: 32,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 8,
+          border: "1px solid #ddd",
+          background: "white",
+          cursor: "pointer"
+        }}
+      >
+        <Eye size={18} />
+      </button>
+    </div>
+  )
+}
   ];
 
   return (
@@ -410,6 +436,82 @@ const vehicles: Vehicle[] = rawVehicles
           <div style={{ padding: '20px', textAlign: 'center' }}>Error loading vehicle details</div>
         )}
       </FormModal>
+      <FormModal
+  isOpen={viewModalOpen}
+  onClose={() => {
+    setViewModalOpen(false);
+    setSelectedRow(null);
+  }}
+  title="Vehicle Details"
+>
+  {selectedRow ? (
+    <div
+      style={{
+        maxWidth: "340px",
+        margin: "0 auto",
+        display: "grid",
+        gap: "10px",
+        padding: "10px 0",
+      }}
+    >
+      {[
+        { label: "License Plate", value: selectedRow.licensePlate },
+        { label: "Vehicle E-Tag ID", value: selectedRow.vehicleETagId },
+        { label: "E-Tag Type", value: selectedRow.eTagType },
+        { label: "Issue Date", value: selectedRow.issueDate },
+        { label: "Expiry Date", value: selectedRow.expiryDate },
+        { label: "Ownership", value: selectedRow.externalUserName },
+        { label: "Make", value: selectedRow.make },
+        { label: "Model", value: selectedRow.model },
+        { label: "Year", value: selectedRow.year },
+        { label: "Color", value: selectedRow.color },
+      ].map((item, i) => (
+        <div
+          key={i}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "9px 12px",
+            borderRadius: "10px",
+            background: "#f9fafb",
+            border: "1px solid #eef2f7",
+          }}
+        >
+          {/* LABEL */}
+          <span
+            style={{
+              color: "#16a34a",
+              fontWeight: 600,
+              fontSize: "13px",
+              minWidth: "130px",
+            }}
+          >
+            {item.label}
+          </span>
+
+          {/* VALUE */}
+          <span
+            style={{
+              color: "#111827",
+              fontWeight: 500,
+              fontSize: "13px",
+              textAlign: "right",
+              flex: 1,
+              wordBreak: "break-word",
+            }}
+          >
+            {item.value || "-"}
+          </span>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div style={{ textAlign: "center", padding: "20px" }}>
+      No data selected
+    </div>
+  )}
+</FormModal>
 
       <WarningModal
         isOpen={deleteModalOpen}

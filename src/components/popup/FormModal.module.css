@@ -14,9 +14,9 @@
 
 .modal {
   background: #F9FAFB;
-  border-radius: 10px;
+  border-radius: 20px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  max-width: 924px;
+  max-width: 450px;
   width: 90%;
   max-height: 600px;
   /* overflow-y: auto; */
