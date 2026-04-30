@@ -27,6 +27,7 @@ const MENU_ICONS: Record<string, { active: string; inactive: string }> = {
   '/visitors': { active: 'Visitorgreen.svg', inactive: 'Visitor.png' },
   '/workers': { active: 'Workergreen.png', inactive: 'Worker.png' },
   '/luggage': { active: 'Luggagegreen.png', inactive: 'Luggage.png' },
+  '/properties': {active: 'properties-icon-color.svg', inactive: 'properties-icon.svg' },
 };
 
 // Helper function to get icon based on active state
@@ -177,6 +178,13 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
               >
                 <span>Luggage Pass</span>
                 <img src={getMenuIcon('/luggage', (activeMenuItem === '/luggage' || activeMenuItem.startsWith('/luggage/')))} alt="" className={styles.menuIconImg} />
+              </Link>
+              <Link 
+                href="/properties" 
+                className={`${(activeMenuItem === '/properties' || activeMenuItem.startsWith('/properties/')) ? styles.menuItemActive : ''} ${styles.menuItem}`}
+              >
+                <span>Properties</span>
+                <img src={getMenuIcon('/properties', (activeMenuItem === '/properties' || activeMenuItem.startsWith('/properties/')))} alt="" className={styles.menuIconImg} />
               </Link>
             </>
           )}

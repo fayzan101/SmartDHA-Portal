@@ -17,6 +17,7 @@ import { useUserFamilyById } from '../../hooks/user-family/useUserFamilyById';
 import { useCreateUserFamily } from '../../hooks/user-family/useCreateUserFamily';
 import { useUpdateUserFamily } from '../../hooks/user-family/useUpdateUserFamily';
 import type { UserFamily } from '../../services/user-family.service';
+import { Eye } from 'lucide-react';
 
 export default function UserFamilyPage() {
   const router = useRouter();
@@ -38,6 +39,8 @@ export default function UserFamilyPage() {
   const [editFamilyId, setEditFamilyId] = useState<string>('');
   const [hasCheckedId, setHasCheckedId] = useState(false);
   const { data: editFamilyDetails, isLoading: isEditFamilyLoading } = useUserFamilyById(editFamilyId);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<any>(null);
 
   // Detect modal state from URL
   const modalMode = searchParams?.get('modal');
@@ -74,7 +77,10 @@ export default function UserFamilyPage() {
     setFormError('');
     router.push('/user-family');
   };
-
+  const handleView = (row: any) => {
+  setSelectedRow(row);
+  setViewModalOpen(true);
+  };
   const toDateInputValue = (value?: string | null) => {
     if (!value) return '';
     const dateMatch = String(value).match(/^\d{4}-\d{2}-\d{2}/);
@@ -209,24 +215,31 @@ export default function UserFamilyPage() {
     });
   };
 
-  const filteredData = userFamilyData
-    .filter((family: UserFamily) => !localRemovedIds.includes(family.id))
-    .map((family, idx) => ({
+  const filteredData = (userFamilyData ?? [])
+  .flatMap((user: any) =>
+    (user.familyMembers ?? []).map((member: any, idx: number) => ({
       sno: idx + 1,
-      id: family.id,
-      name: family.name || '',
-      externalUserName: family.externalUserName || '',
-      phoneNumber: family.phoneNumber || '',
-      cnic: family.cnic || '',
-      relation: family.relation || '',
-      fatherOrHusbandName: family.fatherOrHusbandName || '',
-      residentCardNumber: family.residentCardNumber || '',
-      dateOfBirth: family.dateOfBirth || '',
-      validFrom: family.validFrom || '',
-      validTo: family.validTo || '',
-      cardStatus: family.cardStatus,
-      isActive: family.isActive,
-    }));
+      id: member.id,
+
+      name: member.name || '',
+      externalUserName: user.userName || '',
+
+      phoneNumber: member.phone || '',
+      cnic: member.cnic || '',
+      relation: member.relation || '',
+
+      fatherOrHusbandName: member.fatherOrHusbandName || '',
+      residentCardNumber: member.residentCardNumber || '',
+
+      dateOfBirth: member.dob || '',
+      validFrom: member.validFrom || '',
+      validTo: member.validTo || '',
+
+      isActive: true,
+      cardStatus: null,
+    }))
+  )
+  .filter((row) => !localRemovedIds.includes(row.id));
 
   const columns: Column<any>[] = [
     {
@@ -266,17 +279,29 @@ export default function UserFamilyPage() {
       render: (value) => <StatusBadge type="activeInactive" value={value} />,
     },
     {
-      key: 'action',
-      header: 'Action',
-      render: (_, row) => {
-        return (
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <CircularButton imagePath="/icons/Edit Button.svg" imageAlt="Edit" width={32} height={32} onClick={() => handleEdit(row)} />
-            <CircularButton imagePath="/icons/DeleteButton.svg" imageAlt="Delete" width={32} height={32} onClick={() => handleDelete(row)} />
-          </div>
-        );
-      }
-    },
+  key: 'action',
+  header: 'Action',
+  render: (_, row) => (
+    <div style={{ display: 'flex', gap: '6px' }}>
+      <button
+        onClick={() => handleView(row)}
+        style={{
+          width: 32,
+          height: 32,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 8,
+          border: "1px solid #ddd",
+          background: "white",
+          cursor: "pointer"
+        }}
+      >
+        <Eye size={18} />
+      </button>
+    </div>
+  ),
+}
   ];
 
   return (
@@ -331,7 +356,82 @@ export default function UserFamilyPage() {
           <div style={{ padding: '20px', textAlign: 'center' }}>Error loading user family details</div>
         )}
       </FormModal>
+      <FormModal
+  isOpen={viewModalOpen}
+  onClose={() => {
+    setViewModalOpen(false);
+    setSelectedRow(null);
+  }}
+  title="User Family Details"
+>
+  {selectedRow ? (
+    <div
+      style={{
+        width: "380px",
+        maxWidth: "90vw",
+        margin: "0 auto",
+        display: "grid",
+        gap: "10px",
+        padding: "10px 0",
+      }}
+    >
+      {[
+        { label: "Name", value: selectedRow.name },
+        { label: "User Name", value: selectedRow.externalUserName },
+        { label: "Phone", value: selectedRow.phoneNumber },
+        { label: "CNIC", value: selectedRow.cnic },
+        { label: "Relation", value: selectedRow.relation },
+        { label: "Father/Husband", value: selectedRow.fatherOrHusbandName },
+        { label: "Resident Card", value: selectedRow.residentCardNumber },
+        { label: "DOB", value: formatDateDisplay(selectedRow.dateOfBirth) },
+        { label: "Valid From", value: formatDateDisplay(selectedRow.validFrom) },
+        { label: "Valid To", value: formatDateDisplay(selectedRow.validTo) },
+        { label: "Status", value: selectedRow.isActive ? "Active" : "Inactive" },
+      ].map((item, i) => (
+        <div
+          key={i}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "10px 12px",
+            borderRadius: "10px",
+            background: "#f9fafb",
+            border: "1px solid #eef2f7",
+          }}
+        >
+          <span
+            style={{
+              color: "#16a34a",
+              fontWeight: 600,
+              fontSize: "13px",
+              minWidth: "140px",
+            }}
+          >
+            {item.label}
+          </span>
 
+          <span
+            style={{
+              color: "#111827",
+              fontWeight: 500,
+              fontSize: "13px",
+              textAlign: "right",
+              flex: 1,
+              wordBreak: "break-word",
+            }}
+          >
+            {item.value || "-"}
+          </span>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div style={{ textAlign: "center", padding: "20px" }}>
+      No data selected
+    </div>
+  )}
+</FormModal>
       <WarningModal
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
