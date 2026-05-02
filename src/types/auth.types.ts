@@ -29,15 +29,12 @@ export interface LoginRequest {
   password: string;
 }
 export interface LoginResponse {
-  statusCode: number;
-  successMessage: string;
-  errorMessage: string | null;
-  data: {
-    token: string;
-    expiration: string;
-    email: string;
-    fullName: string;
-  };
+  accessToken: string;
+  role: string;
+  responseMessage: string;
+  name: string;
+  email: string;
+  id: string; // ✅ THIS is your userId
 }
 
 export interface RegisterRequest {
