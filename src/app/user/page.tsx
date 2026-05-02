@@ -141,7 +141,7 @@ export default function NonMemberPage() {
   ];
 
   return (
-    <DashboardLayout pageTitle="Non Member Requests">
+    <DashboardLayout pageTitle="Member Types">
 
       {/* ==============================
           MAIN TABS (NO UNDERLINE)
