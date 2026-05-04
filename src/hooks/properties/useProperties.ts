@@ -8,7 +8,7 @@ export const useProperties = (page: number, pageSize: number) => {
       getAllProperties({
         isActive: true,
         pageNumber: page,
-        pageSize,
+        pageSize: pageSize,
       }),
   });
 };

@@ -6,22 +6,35 @@ import DataTable, { Column } from '../../components/tables/DataTable';
 import { useMemberTypesRequests } from '../../hooks/membertypes/useMemberTypes';
 import { Eye } from 'lucide-react';
 import FormModal from '../../components/popup/FormModal';
+import CommonEntityForm from '../../components/forms/CommonEntityForm';
+import { nonMemberFields } from './nonmemberfield';
+import { useRouter } from 'next/navigation';
 
 export default function NonMemberPage() {
   const { data = [], isLoading } = useMemberTypesRequests();
 
-  // ==============================
-  // TAB STATE
-  // ==============================
   const [mainTab, setMainTab] = useState('residentialCommercial');
   const [subTab, setSubTab] = useState('residential');
 
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<any | null>(null);
+  const router = useRouter();
+  const [addModalOpen, setAddModalOpen] = useState(false);
 
-  // ==============================
-  // CATEGORY SPLIT
-  // ==============================
+  // ================= STYLE =================
+  const btnStyle = {
+    width: 32,
+    height: 32,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    border: "1px solid #ddd",
+    background: "white",
+    cursor: "pointer"
+  };
+
+  // ================= DATA MAP =================
   const categorizedData = useMemo(() => {
     const categories = {
       residential: [] as any[],
@@ -38,19 +51,27 @@ export default function NonMemberPage() {
 
       if (cat === 'residential') categories.residential.push(item);
       else if (cat === 'commercial') categories.commercial.push(item);
-      else if (cat === 'educational visitor') categories.educationalVisitor.push(item);
-      else if (cat === 'commercial employee') categories.commercialEmployee.push(item);
-      else if (cat === 'house help worker') categories.houseHelp.push(item);
-      else if (cat === 'visitor') categories.visitor.push(item);
+
+      // FIXED MATCH
+      else if (cat === 'education visitor' || cat === 'educational visitor')
+        categories.educationalVisitor.push(item);
+
+      else if (cat === 'commercial employee')
+        categories.commercialEmployee.push(item);
+
+      else if (cat === 'house help worker')
+        categories.houseHelp.push(item);
+
+      else if (cat === 'visitor')
+        categories.visitor.push(item);
+
       else categories.other.push(item);
     });
 
     return categories;
   }, [data]);
 
-  // ==============================
-  // FILTER DATA
-  // ==============================
+  // ================= FILTER =================
   const currentData = useMemo(() => {
     if (mainTab === 'residentialCommercial') {
       return subTab === 'residential'
@@ -66,23 +87,26 @@ export default function NonMemberPage() {
     return categorizedData.other;
   }, [mainTab, subTab, categorizedData]);
 
-  // ==============================
-  // TABLE DATA
-  // ==============================
+  // ================= TABLE DATA =================
   const tableData = useMemo(() => {
     return currentData.map((item: any, idx: number) => ({
       sno: idx + 1,
       id: item.id,
-
+      userId: item.userId,
       name: item.name || '-',
-      cnic: item.cnic || '-',
+      email: item.email || '-',
       phone: item.phoneNumber || '-',
 
-      category: item.categoryName || '-',
+      cnic: item.cnic || '-',
+
       subCategory: item.subCategoryName || '-',
 
-      vehicle: item.vehicleNumber || '-',
+      institute: item.instituteName || '-',
+      employerRegNo: item.employeeRegistrationNumber || '-',
+
+      destination: item.destination || '-',
       purpose: item.purposeVisit || '-',
+      vehicle: item.vehicleNumber || '-',
 
       phase: item.phaseName || '-',
       zone: item.zoneName || '-',
@@ -100,56 +124,167 @@ export default function NonMemberPage() {
     setViewModalOpen(true);
   };
 
-  // ==============================
-  // TABLE COLUMNS
-  // ==============================
-  const columns: Column<any>[] = [
-    { key: 'sno', header: 'S.No' },
-    { key: 'name', header: 'Name' },
-    { key: 'cnic', header: 'CNIC' },
-    { key: 'phone', header: 'Phone' },
+  // ================= DYNAMIC COLUMNS =================
+  const columns: Column<any>[] = useMemo(() => {
 
-    { key: 'phase', header: 'Phase' },
-    { key: 'zone', header: 'Zone' },
-    { key: 'khayaban', header: 'Khayaban' },
-    { key: 'lane', header: 'Lane' },
-    { key: 'plot', header: 'Plot' },
-    { key: 'floors', header: 'Floor' },
+    // EDUCATIONAL VISITOR
+    if (mainTab === 'educationalVisitor') {
+      return [
+        { key: 'sno', header: 'S.No' },
+        { key: 'name', header: 'Name' },
+        { key: 'email', header: 'Email' },
+        { key: 'phone', header: 'Phone' },
+        { key: 'subCategory', header: 'Sub Category' },
+        { key: 'institute', header: 'Institute' },
+        { key: 'vehicle', header: 'Vehicle Info' },
+        {
+          key: 'action',
+          header: 'Action',
+          render: (_, row) => (
+            <button onClick={() => handleView(row)} style={btnStyle}>
+              <Eye size={18} />
+            </button>
+          ),
+        },
+      ];
+    }
 
-    {
-      key: 'action',
-      header: 'Action',
-      render: (_, row) => (
+    // COMMERCIAL EMPLOYEE
+    if (mainTab === 'commercialEmployee') {
+      return [
+        { key: 'sno', header: 'S.No' },
+        { key: 'name', header: 'Name' },
+        { key: 'email', header: 'Email' },
+        { key: 'phone', header: 'Phone' },
+        { key: 'subCategory', header: 'Sub Category' },
+        { key: 'employerRegNo', header: 'Employer Reg No' },
+        {
+          key: 'action',
+          header: 'Action',
+          render: (_, row) => (
+            <button onClick={() => handleView(row)} style={btnStyle}>
+              <Eye size={18} />
+            </button>
+          ),
+        },
+      ];
+    }
+
+    // HOUSE HELP
+    if (mainTab === 'houseHelp') {
+      return [
+        { key: 'sno', header: 'S.No' },
+        { key: 'name', header: 'Name' },
+        { key: 'email', header: 'Email' },
+        { key: 'phone', header: 'Phone' },
+        { key: 'subCategory', header: 'Sub Category' },
+        {
+          key: 'action',
+          header: 'Action',
+          render: (_, row) => (
+            <button onClick={() => handleView(row)} style={btnStyle}>
+              <Eye size={18} />
+            </button>
+          ),
+        },
+      ];
+    }
+
+    // VISITOR
+    if (mainTab === 'visitor') {
+      return [
+        { key: 'sno', header: 'S.No' },
+        { key: 'name', header: 'Name' },
+        { key: 'email', header: 'Email' },
+        { key: 'phone', header: 'Phone' },
+        { key: 'subCategory', header: 'Sub Category' },
+        { key: 'destination', header: 'Destination' },
+        { key: 'vehicle', header: 'Vehicle Info' },
+        {
+          key: 'action',
+          header: 'Action',
+          render: (_, row) => (
+            <button onClick={() => handleView(row)} style={btnStyle}>
+              <Eye size={18} />
+            </button>
+          ),
+        },
+      ];
+    }
+
+    // OTHER
+    if (mainTab === 'other') {
+      return [
+        { key: 'sno', header: 'S.No' },
+        { key: 'name', header: 'Name' },
+        { key: 'email', header: 'Email' },
+        { key: 'phone', header: 'Phone' },
+        { key: 'subCategory', header: 'Sub Category' },
+        { key: 'purpose', header: 'Purpose of Visit' },
+        { key: 'vehicle', header: 'Vehicle Info' },
+        {
+          key: 'action',
+          header: 'Action',
+          render: (_, row) => (
+            <button onClick={() => handleView(row)} style={btnStyle}>
+              <Eye size={18} />
+            </button>
+          ),
+        },
+      ];
+    }
+
+    // DEFAULT (RESIDENTIAL / COMMERCIAL)
+    return [
+      { key: 'sno', header: 'S.No' },
+      { key: 'name', header: 'Name' },
+      { key: 'cnic', header: 'CNIC' },
+      { key: 'phone', header: 'Phone' },
+      { key: 'phase', header: 'Phase' },
+      { key: 'zone', header: 'Zone' },
+      { key: 'khayaban', header: 'Khayaban' },
+      { key: 'lane', header: 'Lane' },
+      { key: 'plot', header: 'Plot' },
+      { key: 'floors', header: 'Floor' },
+      {
+  key: 'action',
+  header: 'Action',
+  render: (_, row) => {
+    if (subTab === 'residential') {
+      return (
         <button
-          onClick={() => handleView(row)}
+          onClick={() => router.push(`/familydetails/${row.userId}`)}
           style={{
-            width: 32,
-            height: 32,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            borderRadius: 8,
-            border: "1px solid #ddd",
-            background: "white",
-            cursor: "pointer"
+            padding: '6px 12px',
+            borderRadius: 6,
+            border: '1px solid #22c55e',
+            background: '#22c55e',
+            color: '#fff',
+            fontSize: '12px',
+            cursor: 'pointer',
           }}
         >
-          <Eye size={18} />
+          View More
         </button>
-      ),
-    },
-  ];
+      );
+    }
+
+    // COMMERCIAL → keep eye icon
+    return (
+      <button onClick={() => handleView(row)} style={btnStyle}>
+        <Eye size={18} />
+      </button>
+    );
+  },
+}
+    ];
+  }, [mainTab, subTab]);
 
   return (
     <DashboardLayout pageTitle="Member Types">
 
-      {/* ==============================
-          MAIN TABS (NO UNDERLINE)
-      ============================== */}
-      <div style={{
-        display: 'flex',
-        borderBottom: '1px solid #e5e7eb',
-      }}>
+      {/* TABS */}
+      <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb' }}>
         {[
           { key: 'residentialCommercial', label: 'Residential / Commercial' },
           { key: 'educationalVisitor', label: 'Educational Visitor' },
@@ -175,15 +310,9 @@ export default function NonMemberPage() {
         ))}
       </div>
 
-      {/* ==============================
-          SUB TABS (FULL WIDTH 50-50)
-      ============================== */}
+      {/* SUB TABS */}
       {mainTab === 'residentialCommercial' && (
-        <div style={{
-          display: 'flex',
-          width: '100%',
-          borderBottom: '1px solid #e5e7eb',
-        }}>
+        <div style={{ display: 'flex', width: '100%', borderBottom: '1px solid #e5e7eb' }}>
           {[
             { key: 'residential', label: 'Residential' },
             { key: 'commercial', label: 'Commercial' },
@@ -192,14 +321,12 @@ export default function NonMemberPage() {
               key={tab.key}
               onClick={() => setSubTab(tab.key)}
               style={{
-                flex: 1, // ✅ equal width
+                flex: 1,
                 padding: '12px 0',
                 border: 'none',
                 background: 'transparent',
                 color: subTab === tab.key ? '#22c55e' : '#9ca3af',
-                cursor: 'pointer',
                 fontWeight: subTab === tab.key ? 600 : 500,
-                textAlign: 'center',
               }}
             >
               {tab.label}
@@ -208,57 +335,58 @@ export default function NonMemberPage() {
         </div>
       )}
 
-      {/* ==============================
-          TABLE
-      ============================== */}
+      {/* TABLE */}
       <div style={{ marginTop: 16 }}>
         <DataTable
           columns={columns}
           data={tableData}
           loading={isLoading}
-          emptyMessage={isLoading ? 'Loading...' : 'No data found'}
+          emptyMessage="No data found"
         />
       </div>
 
-      {/* ==============================
-          VIEW MODAL
-      ============================== */}
+      {/* VIEW MODAL */}
       <FormModal
         isOpen={viewModalOpen}
-        onClose={() => {
-          setViewModalOpen(false);
-          setSelectedRow(null);
-        }}
+        onClose={() => setViewModalOpen(false)}
         title="Request Details"
       >
         {selectedRow ? (
           <div style={{ display: "grid", gap: "10px" }}>
-            {[
-              { label: "Name", value: selectedRow.name },
-              { label: "CNIC", value: selectedRow.cnic },
-              { label: "Phone", value: selectedRow.phone },
-              { label: "Phase", value: selectedRow.phase },
-              { label: "Zone", value: selectedRow.zone },
-              { label: "Khayaban", value: selectedRow.khayaban },
-              { label: "Lane", value: selectedRow.lane },
-              { label: "Plot", value: selectedRow.plot },
-              { label: "Floor", value: selectedRow.floors },
-            ].map((item, i) => (
-              <div key={i} style={{
-                display: "flex",
-                justifyContent: "space-between",
-                padding: "10px",
-                background: "#f9fafb",
-                borderRadius: 8
-              }}>
-                <span>{item.label}</span>
-                <span>{item.value}</span>
-              </div>
+            {Object.entries(selectedRow).map(([k, v], i) => (
+              k !== 'raw' && (
+                <div key={i} style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  padding: "10px",
+                  background: "#f9fafb",
+                  borderRadius: 8
+                }}>
+                  <span>{k}</span>
+                  <span>{String(v)}</span>
+                </div>
+              )
             ))}
           </div>
         ) : (
           <div>No data</div>
         )}
+      </FormModal>
+
+      {/* ADD MODAL */}
+      <FormModal
+        isOpen={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        title="Add Non Member"
+      >
+        <CommonEntityForm
+          title="Enter Details"
+          fields={nonMemberFields}
+          onSave={() => setAddModalOpen(false)}
+          onCancel={() => setAddModalOpen(false)}
+          saveButtonText="Create"
+          showStatusToggle={false}
+        />
       </FormModal>
 
     </DashboardLayout>
