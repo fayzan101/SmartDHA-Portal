@@ -27,8 +27,8 @@ export default function Dashboard() {
             <VehiclesChart />
           </div>
         </div>
-        <QuickAccess />
-        <RecentActivities />
+        {/* <QuickAccess /> 
+        <RecentActivities />*/}
       </div>
 
     </div>
