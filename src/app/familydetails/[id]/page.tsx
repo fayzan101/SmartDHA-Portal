@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import apiClient from '@/lib/apiClient';
+import DataTable, { Column } from '@/components/tables/DataTable';
 
 // ─────────────────────────────────────────────
 // HELPERS
@@ -29,38 +30,18 @@ const jobTypeMap: any = {
 // ─────────────────────────────────────────────
 // STYLES
 // ─────────────────────────────────────────────
-const sectionCard = {
-  background: '#fff',
-  padding: '16px',
-  borderRadius: '10px',
-  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-};
-
-const tableStyle = {
-  width: '100%',
-  borderCollapse: 'collapse' as const,
-};
-
-const thStyle = {
-  border: '1px solid #e5e7eb',
-  padding: '10px',
-  fontSize: '12px',
+const titleStyle = {
+  marginBottom: '10px',
+  fontSize: '16px',
   fontWeight: 600,
-  background: '#f9fafb',
-  textAlign: 'left' as const,
-};
-
-const tdStyle = {
-  border: '1px solid #e5e7eb',
-  padding: '8px',
-  fontSize: '12px',
+  color: '#111827',
 };
 
 // ─────────────────────────────────────────────
 // PAGE
 // ─────────────────────────────────────────────
 export default function FamilyDetailsPage() {
-  const { id: userId } = useParams(); // IMPORTANT: this is already userId
+  const { id: userId } = useParams();
 
   const [family, setFamily] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
@@ -70,9 +51,6 @@ export default function FamilyDetailsPage() {
   const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // ─────────────────────────────────────────────
-  // FETCH DATA (ONLY VALID APIs)
-  // ─────────────────────────────────────────────
   useEffect(() => {
     if (!userId) return;
 
@@ -96,11 +74,9 @@ export default function FamilyDetailsPage() {
           apiClient.get(`/api/smartdha/residenceproperty/get-property-by-id/${userId}`),
         ]);
 
-        // FAMILY
-        const userData = familyRes.data?.data?.items?.[0];
+        const userData = familyRes.data?.data;
         setFamily(userData?.familyMembers || []);
 
-        // OTHERS
         setVehicles(vehicleRes.data?.data?.vehicles || []);
         setWorkers(workerRes.data?.data?.workers || []);
         setVisitors(visitorRes.data?.data?.visitorPasses || []);
@@ -120,6 +96,123 @@ export default function FamilyDetailsPage() {
   }, [userId]);
 
   // ─────────────────────────────────────────────
+  // COLUMNS
+  // ─────────────────────────────────────────────
+  const familyColumns: Column<any>[] = [
+    { key: 'name', header: 'Name' },
+    { key: 'relation', header: 'Relation', render: (v) => relationMap[v] || '-' },
+    { key: 'phone', header: 'Phone' },
+    { key: 'dob', header: 'DOB', render: (v) => formatDate(v) },
+    { key: 'cnic', header: 'CNIC' },
+    { key: 'residentCardNumber', header: 'Resident Card No.' },
+  ];
+
+  const vehicleColumns: Column<any>[] = [
+    { key: 'licenseNumber', header: 'License Plate' },
+    { key: 'eTagId', header: 'E-Tag ID' },
+    {key: 'owner', header: 'Ownership'},
+    { key: 'make', header: 'Make' },
+    { key: 'model', header: 'Model' },
+    { key: 'year', header: 'Year' },
+    {key: 'color', header: 'Color' },
+  ];
+
+  const workerColumns: Column<any>[] = [
+    { key: 'name', header: 'Name' },
+    { key: 'jobType', header: 'Job Type', render: (v) => jobTypeMap[v] || '-' },
+    { key: 'phoneNo', header: 'Phone' },
+    { key: 'cnic', header: 'CNIC' },
+    {key: 'workerCardNo', header: 'Worker Card No.'},
+    {key: 'policeVerification', header: 'Police Verification', render: (v) => v ? 'Yes' : 'No' },
+  ];
+
+  const visitorColumns: Column<any>[] = [
+    { key: 'name', header: 'Name' },
+    { key: 'cnic', header: 'CNIC' },
+    {
+     key: 'vehicleLicensePlate',
+  header: 'Vehicle',
+  render: (_: any, row: any) => {
+    const plate = row.vehicleLicensePlate || '';
+    const number = row.vehicleLicenseNo || '';
+
+    if (!plate && !number) return '-';
+    if (!number) return plate;
+    if (!plate) return number;
+
+    return `${plate}-${number}`;
+  },
+    },
+    {key: 'visitorPassType', header: 'Pass Type'},
+    {key: 'validTo', header: 'Validity', render: (v) => formatDate(v)},
+  
+  ];
+
+  const luggageColumns: Column<any>[] = [
+    { key: 'name', header: 'Name' },
+    { key: 'cnic', header: 'CNIC' },
+    {
+     key: 'vehicleLicensePlate',
+  header: 'Vehicle',
+  render: (_: any, row: any) => {
+    const plate = row.vehicleLicensePlate || '';
+    const number = row.vehicleLicenseNo || '';
+
+    if (!plate && !number) return '-';
+    if (!number) return plate;
+    if (!plate) return number;
+
+    return `${plate}-${number}`;
+  }},
+  {key: 'validTo', header: 'Validity', render: (v) => formatDate(v)},
+  ];
+
+  const propertyColumns: Column<any>[] = [
+  { key: 'categoryName', header: 'Category' },
+  { key: 'subCategoryName', header: 'Type' },
+  { key: 'phaseName', header: 'Phase' },
+
+  // ✅ Plot (merged nicely)
+  {
+    key: 'plotNo',
+    header: 'Plot',
+    render: (_: any, row: any) => {
+      const plot = row.plot || '';
+      const number = row.plotNo || '';
+
+      if (!plot && !number) return '-';
+      if (!number) return plot;
+      if (!plot) return number;
+
+      return `${plot}-${number}`; // e.g. H-2354
+    },
+  },
+
+  // ✅ Street
+  { key: 'streetNo', header: 'Street' },
+
+  // ✅ Khayaban (handle empty)
+  {
+    key: 'khayaban',
+    header: 'Khayaban',
+    render: (v: string) => v || '-',
+  },
+
+  // ✅ Floor
+  {
+    key: 'floor',
+    header: 'Floor',
+    render: (v: number) => v ?? '-',
+  },
+
+  // ✅ Property Tag
+  { key: 'propertyTag', header: 'Property Tag' },
+
+  // ✅ Possession Type
+  { key: 'possessionTypeName', header: 'Possession' },
+];
+
+  // ─────────────────────────────────────────────
   // UI
   // ─────────────────────────────────────────────
   return (
@@ -128,152 +221,42 @@ export default function FamilyDetailsPage() {
       {loading ? (
         <p>Loading...</p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
           {/* FAMILY */}
-          <div style={sectionCard}>
-            <h3>Family Details</h3>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Name</th>
-                  <th style={thStyle}>Relation</th>
-                  <th style={thStyle}>Phone</th>
-                  <th style={thStyle}>DOB</th>
-                  <th style={thStyle}>CNIC</th>
-                </tr>
-              </thead>
-              <tbody>
-                {family.map((f, i) => (
-                  <tr key={i}>
-                    <td style={tdStyle}>{f.name}</td>
-                    <td style={tdStyle}>{relationMap[f.relation] || '-'}</td>
-                    <td style={tdStyle}>{f.phone}</td>
-                    <td style={tdStyle}>{formatDate(f.dob)}</td>
-                    <td style={tdStyle}>{f.cnic}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div>
+            <h3 style={titleStyle}>Family Members</h3>
+            <DataTable columns={familyColumns} data={family} loading={loading} />
           </div>
 
           {/* VEHICLES */}
-          <div style={sectionCard}>
-            <h3>Vehicles</h3>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>License Plate</th>
-                  <th style={thStyle}>Make</th>
-                  <th style={thStyle}>Model</th>
-                  <th style={thStyle}>Year</th>
-                </tr>
-              </thead>
-              <tbody>
-                {vehicles.map((v, i) => (
-                  <tr key={i}>
-                    <td style={tdStyle}>{v.licenseNumber}</td>
-                    <td style={tdStyle}>{v.make}</td>
-                    <td style={tdStyle}>{v.model}</td>
-                    <td style={tdStyle}>{v.year}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div>
+            <h3 style={titleStyle}>Vehicles</h3>
+            <DataTable columns={vehicleColumns} data={vehicles} loading={loading} />
           </div>
 
           {/* WORKERS */}
-          <div style={sectionCard}>
-            <h3>Workers</h3>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Name</th>
-                  <th style={thStyle}>Job Type</th>
-                  <th style={thStyle}>Phone</th>
-                  <th style={thStyle}>CNIC</th>
-                </tr>
-              </thead>
-              <tbody>
-                {workers.map((w, i) => (
-                  <tr key={i}>
-                    <td style={tdStyle}>{w.name}</td>
-                    <td style={tdStyle}>{jobTypeMap[w.jobType] || '-'}</td>
-                    <td style={tdStyle}>{w.phoneNo}</td>
-                    <td style={tdStyle}>{w.cnic}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div>
+            <h3 style={titleStyle}>Workers</h3>
+            <DataTable columns={workerColumns} data={workers} loading={loading} />
           </div>
 
           {/* VISITORS */}
-          <div style={sectionCard}>
-            <h3>Visitors</h3>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Name</th>
-                  <th style={thStyle}>CNIC</th>
-                  <th style={thStyle}>Vehicle</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visitors.map((v, i) => (
-                  <tr key={i}>
-                    <td style={tdStyle}>{v.name}</td>
-                    <td style={tdStyle}>{v.cnic}</td>
-                    <td style={tdStyle}>{v.vehicleLicensePlate}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div>
+            <h3 style={titleStyle}>Visitors</h3>
+            <DataTable columns={visitorColumns} data={visitors} loading={loading} />
           </div>
 
           {/* LUGGAGE */}
-          <div style={sectionCard}>
-            <h3>Luggage</h3>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Name</th>
-                  <th style={thStyle}>CNIC</th>
-                </tr>
-              </thead>
-              <tbody>
-                {luggage.map((l, i) => (
-                  <tr key={i}>
-                    <td style={tdStyle}>{l.name || '-'}</td>
-                    <td style={tdStyle}>{l.cnic || '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div>
+            <h3 style={titleStyle}>Luggage</h3>
+            <DataTable columns={luggageColumns} data={luggage} loading={loading} />
           </div>
 
           {/* PROPERTIES */}
-          <div style={sectionCard}>
-            <h3>Properties</h3>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Category</th>
-                  <th style={thStyle}>Type</th>
-                  <th style={thStyle}>Phase</th>
-                  <th style={thStyle}>Plot</th>
-                </tr>
-              </thead>
-              <tbody>
-                {properties.map((p, i) => (
-                  <tr key={i}>
-                    <td style={tdStyle}>{p.categoryName}</td>
-                    <td style={tdStyle}>{p.subCategoryName}</td>
-                    <td style={tdStyle}>{p.phaseName}</td>
-                    <td style={tdStyle}>{p.plotNo}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div>
+            <h3 style={titleStyle}>Properties</h3>
+            <DataTable columns={propertyColumns} data={properties} loading={loading} />
           </div>
 
         </div>

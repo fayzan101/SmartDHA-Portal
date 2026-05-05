@@ -289,14 +289,15 @@ export default function DataTable<T extends Record<string, any>>({
         );
       })()}
 
-      {headerContent}
+      {/* {headerContent}
        {showAddButton && (
         <div className={styles.addButtonWrapper}>
           <button className={styles.addButton} onClick={onAddClick}>
             {addButtonLabel}
           </button>
         </div>
-      )}
+        
+      )}*/}
 
       <div className={styles.tableWrapper}>
         {error ? (
