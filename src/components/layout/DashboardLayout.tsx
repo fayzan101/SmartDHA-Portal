@@ -7,6 +7,7 @@ import { useRouter, usePathname } from "next/navigation";
 import styles from "./DashboardLayout.module.css";
 import CircularButton from "../ui/CircularButton";
 import RightSidebar from "../shared/RightSidebar";
+import apiClient from "@/lib/apiClient";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -47,7 +48,10 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
   const [searchError, setSearchError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const externalSearchMutation = useExternalSearch();
-
+  const [profile, setProfile] = useState({
+    name: "",
+    profileImage: "",
+  });
   // Optionally, handle results in state or UI
   useEffect(() => {
     if (externalSearchMutation.status === "pending") {
@@ -69,7 +73,23 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
   useEffect(() => {
     setActiveMenuItem(pathname ?? "");
   }, [pathname]);
+  useEffect(() => {
+  const fetchProfile = async () => {
+    try {
+      const res = await apiClient.get("/api/smartdha/user/getprofiledetail");
+      const data = res.data;
+      setProfile({
+        name: data.name,
+        profileImage: data.profileImage?.trim() || "",
+      });
+      
+    } catch (err) {
+      console.log("Profile fetch error:", err);
+    }
+  };
 
+  fetchProfile();
+}, []);
   const handleLogout = () => {
     router.push('/auth/sign-in');
   };
@@ -251,10 +271,10 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
                 className={styles.userInfo} 
                 onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
               >
-                <img src={userAvatarUrl || "/icons/Profile Picture.jpg"} alt="User" className={styles.userAvatar} />
+                <img  src={profile.profileImage || userAvatarUrl || "/icons/profile_dummy.png"}  alt="User"  className={styles.userAvatar} />
                 <div className={styles.userTextWrapper}>
-                  <span className={styles.welcomeText}>👋 Welcome Back,</span>
-                  <span className={styles.userName}>{userName}</span>
+                  <span className={styles.welcomeText}>Welcome Back,</span>
+                  <span className={styles.userName}> {profile.name || userName}</span>
                 </div>
                 <img src="/icons/gridicons_dropdown.png" alt="" className={styles.userDropdownImg} />
               </div>
