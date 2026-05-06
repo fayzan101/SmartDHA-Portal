@@ -220,7 +220,7 @@ export default function RightSidebar() {
   return (
     <div className="flex flex-col w-full h-full bg-white">
       {/* ─── PROFILE ─────────────────────────────────────────────── */}
-      <div className="px-4 py-5">
+      {/* <div className="px-4 py-5">
         <div className="bg-[#F9FAFB] p-4 rounded-xl flex flex-col items-center shadow">
           <Image
             src={profile?.profileImage || "/icons/Image.png"}
@@ -250,10 +250,10 @@ export default function RightSidebar() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* ─── NOTIFICATIONS ───────────────────────────────────────── */}
-      <div className="px-4">
+      <div className="px-4 py-5">
         <p className="font-semibold text-[16px] mb-2">Notifications</p>
 
         <div
