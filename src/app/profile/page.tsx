@@ -1,65 +1,163 @@
+'use client';
+
+import { useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import CommonEntityForm, { ProfileField } from '../../components/forms/CommonEntityForm';
+import CommonEntityForm, {
+  ProfileField,
+} from '../../components/forms/CommonEntityForm';
+import apiClient from '@/lib/apiClient';
 
 export default function ProfilePage() {
-  const pageTitle = 'Profile';
-  
-  // Status options for different status type selects
-  const cardStatusOptions = [
-    { value: '0', label: 'Draft' },
-    { value: '1', label: 'Encoded' },
-    { value: '2', label: 'Active' },
-    { value: '3', label: 'Suspended' },
-    { value: '4', label: 'Blacklisted' },
-    { value: '5', label: 'Replaced' },
-    { value: '6', label: 'Expired' },
-  ];
+  const pageTitle = 'Update User';
 
-  const tagStatusOptions = [
-    { value: '0', label: 'Unknown' },
-    { value: '1', label: 'Active' },
-    { value: '2', label: 'Blocked' },
-    { value: '3', label: 'Expired' },
-    { value: '4', label: 'Suspended' },
-  ];
+  const [loading, setLoading] = useState(false);
 
-  const vehicleCategoryOptions = [
-    { value: '0', label: 'Private' },
-    { value: '1', label: 'Official' },
-    { value: '2', label: 'Service' },
-    { value: '3', label: 'Commercial' },
-  ];
-
-  const activeInactiveOptions = [
-    { value: '1', label: 'Active' },
-    { value: '0', label: 'Inactive' },
-  ];
-  
   const profileFields: ProfileField[] = [
-    { name: 'idNumber', label: 'ID Number', type: 'text', required: true, placeholder: 'Type here' },
-    { name: 'role', label: 'Role', type: 'select', required: true, options: [ { value: '', label: 'Select Role here' } ] },
-    { name: 'fullName', label: 'Full Name', type: 'text', required: true, placeholder: 'Full Name here' },
-    { name: 'userName', label: 'User Name', type: 'text', required: true, placeholder: 'User Name here' },
-    { name: 'cnic', label: 'CNIC', type: 'text', required: true, placeholder: '12345-1234567-1' },
-    { name: 'vehicleTagId', label: 'Vehicle Tag ID', type: 'text', required: false, placeholder: 'Vehicle Tag ID here' },
-    { name: 'emailAddress', label: 'Email Address', type: 'email', required: true, placeholder: 'Email Address here' },
-    { name: 'password', label: 'Password', type: 'password', required: true, placeholder: 'Password here' },
-    { name: 'phoneNumber', label: 'Phone Number', type: 'text', required: true, placeholder: '0301-2345650' },
-    { name: 'cnicFront', label: 'CNIC Front', type: 'file', required: true },
-    { name: 'cnicBack', label: 'CNIC Back', type: 'file', required: true },
-    { name: 'profilePicture', label: 'Profile Picture', type: 'file', required: false },
-    
-    // Status Type Fields
-    { name: 'cardStatus', label: 'Card Status', type: 'select', required: false, options: cardStatusOptions },
-    { name: 'tagStatus', label: 'Tag Status', type: 'select', required: false, options: tagStatusOptions },
-    { name: 'vehicleCategory', label: 'Vehicle Category', type: 'select', required: false, options: vehicleCategoryOptions },
-    { name: 'activeInactiveStatus', label: 'Active/Inactive Status', type: 'select', required: false, options: activeInactiveOptions },
+    {
+      name: 'name',
+      label: 'Name',
+      type: 'text',
+      required: true,
+      placeholder: 'Enter Name',
+    },
+    {
+      name: 'email',
+      label: 'Email',
+      type: 'email',
+      required: true,
+      placeholder: 'Enter Email',
+    },
+    {
+      name: 'userName',
+      label: 'User Name',
+      type: 'text',
+      required: true,
+      placeholder: 'Enter User Name',
+    },
+    {
+      name: 'mobileNo',
+      label: 'Mobile Number',
+      type: 'text',
+      required: true,
+      placeholder: '0301-2345678',
+    },
+    {
+      name: 'cnic',
+      label: 'CNIC',
+      type: 'text',
+      required: true,
+      placeholder: '12345-1234567-1',
+    },
+    {
+      name: 'password',
+      label: 'Password',
+      type: 'password',
+      required: true,
+      placeholder: 'Enter Password',
+    },
+    {
+      name: 'profilePicture',
+      label: 'Profile Picture',
+      type: 'file',
+      required: false,
+    },
   ];
+
+  const handleSubmit = async (
+    formData: Record<string, any>
+  ) => {
+    try {
+      setLoading(true);
+
+      const payload = new FormData();
+
+      // Get logged in user id
+      const userId =
+        localStorage.getItem('userId') || '';
+
+      payload.append('Id', userId);
+
+      payload.append(
+        'Name',
+        formData.name || ''
+      );
+
+      payload.append(
+        'Email',
+        formData.email || ''
+      );
+
+      payload.append(
+        'UserName',
+        formData.userName || ''
+      );
+
+      payload.append(
+        'MobileNo',
+        formData.mobileNo || ''
+      );
+
+      payload.append(
+        'CNIC',
+        formData.cnic || ''
+      );
+
+      payload.append(
+        'Password',
+        formData.password || ''
+      );
+
+      if (formData.profilePicture) {
+        payload.append(
+          'ProfilePicture',
+          formData.profilePicture
+        );
+      }
+
+      console.log(
+        'Update User Payload:',
+        [...payload.entries()]
+      );
+
+      const response = await apiClient.post(
+        'api/smartdha/user/update-user',
+        payload,
+        {
+          headers: {
+            'Content-Type':
+              'multipart/form-data',
+          },
+        }
+      );
+
+    } catch (error: any) {
+      console.error(
+        'Update User Error:',
+        error
+      );
+
+      console.error(
+        'Backend Response:',
+        error?.response?.data
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <DashboardLayout pageTitle={pageTitle} showBackButton={true}>
-      <CommonEntityForm fields={profileFields} />
+    <DashboardLayout
+      pageTitle={pageTitle}
+      showBackButton={true}
+    >
+      <CommonEntityForm
+        fields={profileFields}
+        onSave={handleSubmit}
+        loading={loading}
+        saveButtonText="Update"
+        successTitle="User Updated"
+        successMessage="User updated successfully."
+      />
     </DashboardLayout>
   );
 }
-
