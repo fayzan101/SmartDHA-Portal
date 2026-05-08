@@ -6,7 +6,9 @@
   --primary: #30b33d;
   --page-background: #f3f6f9;
 }
-
+html, body {
+  overflow-x: hidden;
+}
 /* Agar custom CSS chahiye to */
 body {
   font-family: 'Segoe UI', system-ui;

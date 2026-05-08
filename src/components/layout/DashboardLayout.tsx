@@ -295,6 +295,10 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
                       <span className={styles.toggleSlider}></span>
                     </label>
                   </div>
+                  <div className={styles.profileDropdownDivider} />
+                  <button className={styles.profileDropdownItem} onClick={handleLogout}>
+                    <span>Logout</span>
+                  </button>
                 </div>
               )}
             </div>
@@ -304,9 +308,9 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
         <section className={styles.contentSection}>{children}</section>
       </main>
 
-      <aside >
+      {/* <aside >
         <RightSidebar />
-      </aside>
+      </aside> */}
 
     </div>
   );
