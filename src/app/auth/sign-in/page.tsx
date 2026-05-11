@@ -27,7 +27,7 @@ export default function SignInPage() {
           <h3 className="auth_subtitle">Smart Society . Home For Defenders</h3>
         </div>
         <SignInForm login={login} isPending={isPending} />
-        <p style={{ textAlign: 'center', marginTop: '12px', fontSize: '14px', color: '#6e6c6c' }}>Don't have an account? <a href="/auth/sign-up" style={{ color: '#16a34a', fontWeight: 600, textDecoration: 'none' }}>Signup</a></p>
+        {/* <p style={{ textAlign: 'center', marginTop: '12px', fontSize: '14px', color: '#6e6c6c' }}>Don't have an account? <a href="/auth/sign-up" style={{ color: '#16a34a', fontWeight: 600, textDecoration: 'none' }}>Signup</a></p> */}
         <hr style={{ border: 'none', borderTop: '1px solid #969799', margin: '16px 0' }} />
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', fontSize: '13px', color: '#555' }}><Phone size={14} color="#16a34a" /><a href="/contact-support" style={{ color: '#555', textDecoration: 'none' }}>Contact Support</a><Info size={14} color="#16a34a" /><a href="/about" style={{ color: '#555', textDecoration: 'none' }}>About Us</a></div>
       </div>

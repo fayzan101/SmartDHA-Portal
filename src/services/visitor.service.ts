@@ -8,6 +8,7 @@ export interface ExternalVisitorPass {
   cnic: string;
   vehicleLicensePlate: string;
   vehicleLicenseNo: number;
+  vehicleLicense: string;
   visitorPassType: string | number;
   validFrom: string;
   validTo: string;

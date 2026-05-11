@@ -215,31 +215,35 @@ export default function UserFamilyPage() {
     });
   };
 
-  const filteredData = (userFamilyData ?? [])
-  .flatMap((user: any) =>
-    (user.familyMembers ?? []).map((member: any, idx: number) => ({
-      sno: idx + 1,
-      id: member.id,
+  const filteredData = (() => {
+  let counter = 0;
 
-      name: member.name || '',
-      externalUserName: user.userName || '',
+  return (userFamilyData ?? [])
+    .flatMap((user: any) =>
+      (user.familyMembers ?? []).map((member: any) => ({
+        sno: ++counter, // 👈 GLOBAL increment
+        id: member.id,
 
-      phoneNumber: member.phone || '',
-      cnic: member.cnic || '',
-      relation: member.relation || '',
+        name: member.name || '',
+        externalUserName: user.userName || '',
 
-      fatherOrHusbandName: member.fatherOrHusbandName || '',
-      residentCardNumber: member.residentCardNumber || '',
+        phoneNumber: member.phone || '',
+        cnic: member.cnic || '',
+        relation: member.relation || '',
 
-      dateOfBirth: member.dob || '',
-      validFrom: member.validFrom || '',
-      validTo: member.validTo || '',
+        fatherOrHusbandName: member.fatherOrHusbandName || '',
+        residentCardNumber: member.residentCardNumber || '',
 
-      isActive: true,
-      cardStatus: null,
-    }))
-  )
-  .filter((row) => !localRemovedIds.includes(row.id));
+        dateOfBirth: member.dob || '',
+        validFrom: member.validFrom || '',
+        validTo: member.validTo || '',
+
+        isActive: true,
+        cardStatus: null,
+      }))
+    )
+    .filter((row) => !localRemovedIds.includes(row.id));
+})();
 
   const columns: Column<any>[] = [
     {
@@ -278,30 +282,6 @@ export default function UserFamilyPage() {
       header: 'Status',
       render: (value) => <StatusBadge type="activeInactive" value={value} />,
     },
-    {
-  key: 'action',
-  header: 'Action',
-  render: (_, row) => (
-    <div style={{ display: 'flex', gap: '6px' }}>
-      <button
-        onClick={() => handleView(row)}
-        style={{
-          width: 32,
-          height: 32,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: 8,
-          border: "1px solid #ddd",
-          background: "white",
-          cursor: "pointer"
-        }}
-      >
-        <Eye size={18} />
-      </button>
-    </div>
-  ),
-}
   ];
 
   return (

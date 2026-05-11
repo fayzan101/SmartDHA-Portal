@@ -137,15 +137,6 @@ export default function NonMemberPage() {
         { key: 'subCategory', header: 'Sub Category' },
         { key: 'institute', header: 'Institute' },
         { key: 'vehicle', header: 'Vehicle Info' },
-        {
-          key: 'action',
-          header: 'Action',
-          render: (_, row) => (
-            <button onClick={() => handleView(row)} style={btnStyle}>
-              <Eye size={18} />
-            </button>
-          ),
-        },
       ];
     }
 
@@ -158,15 +149,6 @@ export default function NonMemberPage() {
         { key: 'phone', header: 'Phone' },
         { key: 'subCategory', header: 'Sub Category' },
         { key: 'employerRegNo', header: 'Employer Reg No' },
-        {
-          key: 'action',
-          header: 'Action',
-          render: (_, row) => (
-            <button onClick={() => handleView(row)} style={btnStyle}>
-              <Eye size={18} />
-            </button>
-          ),
-        },
       ];
     }
 
@@ -178,15 +160,6 @@ export default function NonMemberPage() {
         { key: 'email', header: 'Email' },
         { key: 'phone', header: 'Phone' },
         { key: 'subCategory', header: 'Sub Category' },
-        {
-          key: 'action',
-          header: 'Action',
-          render: (_, row) => (
-            <button onClick={() => handleView(row)} style={btnStyle}>
-              <Eye size={18} />
-            </button>
-          ),
-        },
       ];
     }
 
@@ -200,15 +173,6 @@ export default function NonMemberPage() {
         { key: 'subCategory', header: 'Sub Category' },
         { key: 'destination', header: 'Destination' },
         { key: 'vehicle', header: 'Vehicle Info' },
-        {
-          key: 'action',
-          header: 'Action',
-          render: (_, row) => (
-            <button onClick={() => handleView(row)} style={btnStyle}>
-              <Eye size={18} />
-            </button>
-          ),
-        },
       ];
     }
 
@@ -222,15 +186,6 @@ export default function NonMemberPage() {
         { key: 'subCategory', header: 'Sub Category' },
         { key: 'purpose', header: 'Purpose of Visit' },
         { key: 'vehicle', header: 'Vehicle Info' },
-        {
-          key: 'action',
-          header: 'Action',
-          render: (_, row) => (
-            <button onClick={() => handleView(row)} style={btnStyle}>
-              <Eye size={18} />
-            </button>
-          ),
-        },
       ];
     }
 
@@ -268,13 +223,6 @@ export default function NonMemberPage() {
         </button>
       );
     }
-
-    // COMMERCIAL → keep eye icon
-    return (
-      <button onClick={() => handleView(row)} style={btnStyle}>
-        <Eye size={18} />
-      </button>
-    );
   },
 }
     ];

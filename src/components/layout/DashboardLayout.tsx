@@ -8,6 +8,8 @@ import styles from "./DashboardLayout.module.css";
 import CircularButton from "../ui/CircularButton";
 import RightSidebar from "../shared/RightSidebar";
 import apiClient from "@/lib/apiClient";
+import { em } from "framer-motion/client";
+import { useSearch } from "@/context/searchContext";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -39,6 +41,7 @@ const getMenuIcon = (path: string, isActive: boolean): string => {
 
 export default function DashboardLayout({ children, pageTitle = "Dashboard", userName = "Ahmed Faraz", userAvatarUrl, headerAction, showBackButton }: DashboardLayoutProps) {
   const [memberTypeOpen, setMemberTypeOpen] = useState(true);
+  const [memberDropdownOpen, setMemberDropdownOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [activeMenuItem, setActiveMenuItem] = useState('/dashboard');
@@ -48,8 +51,11 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
   const [searchError, setSearchError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const externalSearchMutation = useExternalSearch();
+  
   const [profile, setProfile] = useState({
     name: "",
+    email: "",
+    userRole: "",
     profileImage: "",
   });
   // Optionally, handle results in state or UI
@@ -92,6 +98,8 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
       setProfile({
         name: data.name,
         profileImage: data.profileImage?.trim() || "",
+        email: data.email,
+        userRole: data.userRole || "",
       });
       
     } catch (err) {
@@ -152,11 +160,10 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
             <img src={getMenuIcon('/dashboard', activeMenuItem === '/dashboard')} alt="" className={styles.menuIconImg} />
           </Link>
           <Link 
-            href="/setup" 
-            onClick={()=>localStorage.setItem('activeTab','cp-agent')}
-            className={`${activeMenuItem.includes('/setup') ? styles.menuItemActive : ''} ${styles.menuItemGap} ${styles.menuItem}`}
+            href="/pickuplocation" 
+            className={`${activeMenuItem.includes('/pickuplocation') ? styles.menuItemActive : ''} ${styles.menuItemGap} ${styles.menuItem}`}
           >
-            <span>Setup</span>
+            <span>Add Pickup Location</span>
             <img src={getMenuIcon('/setup', activeMenuItem.includes('/setup'))} alt="" className={styles.menuIconImg} />
           </Link>
           <div 
@@ -173,13 +180,45 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
           </div>
           {memberTypeOpen && (
             <>
-              <Link 
-                href="/user" 
-                className={`${(activeMenuItem === '/user' || activeMenuItem.startsWith('/user/')) ? styles.menuItemActive : ''} ${styles.menuItem}`}
-              >
-                <span>Member Type</span>
-                <img src={getMenuIcon('/user', (activeMenuItem === '/user' || activeMenuItem.startsWith('/user/')))} alt="" className={styles.menuIconImg} />
-              </Link>
+              <div>
+  {/* MAIN BUTTON */}
+  <div
+    className={`${styles.menuItem} ${
+      (activeMenuItem === '/user' || activeMenuItem === '/non-member') ||
+      activeMenuItem.startsWith('/user/')
+        ? styles.menuItemActive
+        : ''
+    }`}
+    onClick={() => setMemberDropdownOpen(!memberDropdownOpen)}
+    style={{ cursor: 'pointer' }}
+  >
+    <span>Member Type</span>
+    <img
+      src="/icons/Arrow.png"
+      alt=""
+      className={styles.menuDropdownIconImg}
+    />
+  </div>
+
+  {/* DROPDOWN */}
+  {memberDropdownOpen && (
+    <div style={{ paddingLeft: '15px' }}>
+      <Link
+        href="/user"
+        className={`${activeMenuItem === '/user' ? styles.menuItemActive : ''} ${styles.menuItem}`}
+      >
+        <span>Non Member</span>
+      </Link>
+
+      <Link
+        href="/member"
+        className={`${activeMenuItem === '/member' ? styles.menuItemActive : ''} ${styles.menuItem}`}
+      >
+        <span>Member</span>
+      </Link>
+    </div>
+  )}
+</div>
               <Link 
                 href="/user-family" 
                 className={`${(activeMenuItem === '/user-family' || activeMenuItem.startsWith('/user-family/')) ? styles.menuItemActive : ''} ${styles.menuItem}`}
@@ -357,8 +396,9 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
               >
                 <img  src={profile.profileImage || userAvatarUrl || "/icons/profile_dummy.png"}  alt="User"  className={styles.userAvatar} />
                 <div className={styles.userTextWrapper}>
-                  <span className={styles.welcomeText}>Welcome Back,</span>
                   <span className={styles.userName}> {profile.name || userName}</span>
+                  <span className={styles.welcomeText}>{profile.email}</span>
+                  <span className={styles.welcomeText}>{profile.userRole}</span>
                 </div>
                 <img src="/icons/gridicons_dropdown.png" alt="" className={styles.userDropdownImg} />
               </div>
@@ -368,7 +408,7 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
                     <span>Profile</span>
                   </Link>
                   <div className={styles.profileDropdownDivider} />
-                  <div className={styles.profileDropdownItem}>
+                  {/* <div className={styles.profileDropdownItem}>
                     <span>Notifications</span>
                     <label className={styles.toggleSwitch}>
                       <input 
@@ -378,7 +418,7 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
                       />
                       <span className={styles.toggleSlider}></span>
                     </label>
-                  </div>
+                  </div> */}
                   <div className={styles.profileDropdownDivider} />
                   <button className={styles.profileDropdownItem} onClick={handleLogout}>
                     <span>Logout</span>

@@ -185,7 +185,7 @@ export default function Page() {
             height={40}
             style={{ width: "auto", height: "auto" }}
           />
-          <span className="font-bold text-lg">Smart DHA City</span>
+          <span className="font-bold text-lg">Smart DHA</span>
         </div>
         <nav className="flex gap-8 text-sm font-medium">
           <a
@@ -245,14 +245,6 @@ export default function Page() {
             Contact
           </a>
         </nav>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="bg-gradient-to-r from-[#30B33D] to-[#2BD53C] hover:from-[#30B33D] hover:to-[#30B33D] duration-100 transition text-white px-10 py-2 rounded-md text-sm font-semibold"
-          onClick={() => router.push("/auth/sign-in")}
-        >
-          Register Now
-        </motion.button>
       </motion.header>
       
       {/* Hero Section */}
@@ -283,14 +275,6 @@ export default function Page() {
             >
               Access Your Dashboard
               <ArrowRight />
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05, backgroundColor: "#f0fdf4" }}
-              whileTap={{ scale: 0.95 }}
-              className="border border-green-500 text-green-500 px-6 py-3 rounded-md font-semibold bg-white hover:bg-green-50"
-              onClick={() => router.push("/auth/sign-in")}
-            >
-              Create Account
             </motion.button>
           </div>
           <motion.div 
@@ -497,7 +481,7 @@ export default function Page() {
                       <span className="text-green-500">more sustainable future.</span>
                     </h2>
                     <p className="text-gray-500 mb-6 text-xl max-w-[800px]">
-                      DHA City Karachi, a path-breaking venture, lies on the M-9
+                      Smart DHA Karachi, a path-breaking venture, lies on the M-9
                       Motorway and stands as Pakistan&apos;s premier smart and
                       sustainable city. This project, spanning over 22,000 acres of
                       land, has garnered international recognition for its innovative
@@ -505,9 +489,9 @@ export default function Page() {
                     </p>
                     <p className="text-gray-500 text-xl max-w-[800px]">
                       Certified by the Institute for Sustainable Infrastructure, USA
-                      in 2014, DHA City is a testament to its commitment to
-                      environmental sustainability and a smart lifestyle. The
-                      city&apos;s master plan is meticulously designed to create a
+                      in 2014, Smart DHA is a testament to its commitment to
+                      environmental sustainability and a smart lifestyle. Smart
+                      DHA's master plan is meticulously designed to create a
                       self-sufficient and eco-friendly environment, incorporating
                       cutting-edge infrastructure and services.
                     </p>
@@ -530,7 +514,7 @@ export default function Page() {
                           Brig Muhammad Kashif Naeem
                         </p>
                         <p className="text-base text-gray-500">
-                          Administrator, DHA City Karachi
+                          Administrator, SmartDHA Karachi
                         </p>
                       </div>
                     </div>
@@ -561,7 +545,7 @@ export default function Page() {
                   alt={
                     aboutTab === "about"
                       ? "DHA Karachi"
-                      : "Administrator DHA City Karachi"
+                      : "Administrator Smart DHA Karachi"
                   }
                   fill
                   sizes="(min-width: 1024px) 600px, 100vw"
@@ -1188,14 +1172,14 @@ export default function Page() {
             <div className="flex items-center gap-2 mb-4">
               <Image
                 src="/images/logo.png"
-                alt="Smart DHA City"
+                alt="Smart DHA"
                 width={40}
                 height={40}
                 className="w-10 h-10"
                 style={{ width: "auto", height: "auto" }}
               />
               <span className="font-medium text-2xl text-black">
-                Smart DHA City
+                Smart DHA
               </span>
             </div>
             <div className="text-gray-700 text-xl mb-2 max-w-[250px] text-justify">

@@ -26,6 +26,7 @@ interface Visitor {
   userName?: string;
   visitorName?: string;
   vehicleInfo: string;
+  vehicleLicense?: string;
   visitDetail: string;
   validity: string;
   cnicNicopNo: string;
@@ -95,16 +96,18 @@ export default function VisitorsPage() {
   ...(data?.data?.previousVisitors || [])
 ];
 
+const pageSize = 10;
+
 const visitors = rawVisitors
   .filter((item) => item && !localRemovedIds.includes(item.id))
   .map((item, idx) => ({
-    sno: idx + 1,
+    sno: (currentPage - 1) * pageSize + idx + 1,
     id: item.id,
 
     visitorName: item.name || '-',       // ✅ FIX
     cnicNicopNo: item.cnic || '-',       // ✅ FIX
 
-    vehicleInfo: `${item.vehicleLicensePlate || ''}${item.vehicleLicenseNo ? `-${item.vehicleLicenseNo}` : ''}`,
+    vehicleInfo: `${item.vehicleLicense || ''}${item.vehicleLicenseNo ? `-${item.vehicleLicenseNo}` : ''}` || '-',
     visitDetail:
       item.visitorPassType === 'DayPass' || item.visitorPassType === 1
         ? 'Day Pass'
@@ -312,13 +315,6 @@ const visitors = rawVisitors
     { key: 'visitDetail', header: 'Visit Detail' },
     { key: 'validity', header: 'Validity' },
     { key: 'cnicNicopNo', header: 'CNIC/NICOP No.' },
-    {
-      key: 'hostDetails',
-      header: 'Host Details',
-      render: (_, row) => (
-        <CircularButton imagePath="/icons/Host.svg" imageAlt="Host" width={32} height={32} onClick={() => handleHostClick(row)} />
-      ),
-    },
      {
       key: 'cardStatus',
       header: 'Card Status',
@@ -329,30 +325,6 @@ const visitors = rawVisitors
       header: 'Status',
       render: (value: boolean) => <StatusBadge type="activeInactive" value={value} />,
     },
-    {
-  key: 'action',
-  header: 'Action',
-  render: (_, row) => (
-    <div style={{ display: 'flex', gap: '6px' }}>
-      <button
-        onClick={() => handleView(row)}
-        style={{
-          width: 32,
-          height: 32,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: 8,
-          border: "1px solid #ddd",
-          background: "white",
-          cursor: "pointer"
-        }}
-      >
-        <Eye size={18} />
-      </button>
-    </div>
-  ),
-}
   ];
 
   return (

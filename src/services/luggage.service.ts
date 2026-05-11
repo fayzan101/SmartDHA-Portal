@@ -5,8 +5,7 @@ export interface Luggage {
   ser: number;
   name: string;
   cnic: string;
-  vehicleLicensePlate: string;
-  vehicleLicenseNo: number;
+  vehicleInfo: string;
   description: string;
   luggagePassType: string | number;
   validFrom: string;

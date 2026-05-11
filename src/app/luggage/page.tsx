@@ -191,9 +191,7 @@ export default function LuggagePage() {
     return {
       fullName: data.name || '',
       cnic: data.cnic || '',
-      vehicleNo: data.vehicleLicensePlate?.split('-')[0] || '',
-      vehicleNo2: data.vehicleLicensePlate?.split('-')[1] || '',
-      licensePlate: data.vehicleLicensePlate || '',
+      vehicleNo: data.vehicleInfo,
       qrReference: data.qrCode || '',
       status: data.isActive ? 'active' : 'inactive',
       quickPick: toQuickPick(data.luggagePassType),
@@ -216,7 +214,7 @@ export default function LuggagePage() {
         name: formData.fullName || luggageData.name || '',
         cnic: formData.cnic || luggageData.cnic || '',
         vehicleLicensePlate: toVehicleLicensePlate(formData.vehicleNo, formData.vehicleNo2),
-        vehicleLicenseNo: Number(formData.vehicleNo2 || luggageData.vehicleLicenseNo || 0),
+        vehicleLicenseNo: Number(formData.vehicleNo2 || 0),
         luggagePassType: luggagePassType || luggageData.luggagePassType || 1,
         validFrom: toIsoDate(formData.fromDate),
         validTo: toIsoDate(formData.toDate),
@@ -247,7 +245,7 @@ const luggagePasses: LuggagePass[] = rawList
     id: item.id,
     name: item.name,
     userName: item.externalUserName || '-',
-    vehicleInfo: item.vehicleLicensePlate || '-',
+    vehicleInfo: item.vehicleInfo || '-',
     visitDetail: toLuggagePassTypeLabel(item.luggagePassType),
     validity: `${formatDateDisplay(item.validFrom)} - ${formatDateDisplay(item.validTo)}`,
     cnicNicopNo: item.cnic,
@@ -305,30 +303,6 @@ const luggagePasses: LuggagePass[] = rawList
       header: 'Status',
       render: (value: boolean) => <StatusBadge type="activeInactive" value={value} />,
     },
-    {
-  key: 'action',
-  header: 'Action',
-  render: (_, row) => (
-    <div style={{ display: 'flex', gap: '6px' }}>
-      <button
-        onClick={() => handleView(row)}
-        style={{
-          width: 32,
-          height: 32,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: 8,
-          border: "1px solid #ddd",
-          background: "white",
-          cursor: "pointer"
-        }}
-      >
-        <Eye size={18} />
-      </button>
-    </div>
-  ),
-}
   ];
 
   // -----------------------------------------------------------------------

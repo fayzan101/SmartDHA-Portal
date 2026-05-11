@@ -35,30 +35,34 @@ export default function PropertiesPage() {
   const [selectedRow, setSelectedRow] = useState<PropertyRow | null>(null);
 
   // ✅ USE HOOK (NO FETCH)
-  const { data, isLoading, isError, error } = useProperties(currentPage, 10);
+  const { data, isLoading, isError, error } = useProperties(currentPage -1 , 10);
 
   // ==============================
   // DATA MAPPING (IMPORTANT)
   // ==============================
-  const properties: PropertyRow[] =
-    (data?.data?.items ?? []).flatMap((user: any) =>
-      (user.activeProperties ?? []).map((prop: any, idx: number) => ({
-        sno: idx + 1,
-        id: prop.id,
+  
+const flatProperties =
+  (data?.data?.items ?? []).flatMap((user: any) =>
+    (user.activeProperties ?? []).map((prop: any) => ({
+      id: prop.id,
 
-        userName: user.userName || '-',
-        category: prop.categoryName || '-',
-        subCategory: prop.subCategoryName || '-',
-        phase: prop.phaseName || '-',
-        zone: prop.zoneName || '-',
-        street: prop.streetNo || '-',
-        plot: prop.plot || '-',
-        propertyTag: prop.propertyTag || '-',
-        possessionType: prop.possessionType || '-',
-        status: prop.isActive ?? false,
-      }))
-    );
+      userName: user.userName || '-',
+      category: prop.categoryName || '-',
+      subCategory: prop.subCategoryName || '-',
+      phase: prop.phaseName || '-',
+      zone: prop.zoneName || '-',
+      street: prop.streetNo || '-',
+      plot: prop.plot || '-',
+      propertyTag: prop.propertyTag || '-',
+      possessionType: prop.possessionType || '-',
+      status: prop.isActive ?? false,
+    }))
+  );
 
+const properties: PropertyRow[] = flatProperties.map((item: any, idx: number) => ({
+  ...item,
+  sno: idx + 1,
+}));
   // ==============================
   // VIEW HANDLER
   // ==============================
@@ -86,28 +90,6 @@ export default function PropertiesPage() {
       header: 'Status',
       render: (value: boolean) => (
         <StatusBadge type="activeInactive" value={value} />
-      ),
-    },
-    {
-      key: 'action',
-      header: 'Action',
-      render: (_, row) => (
-        <button
-          onClick={() => handleView(row)}
-          style={{
-            width: 32,
-            height: 32,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            borderRadius: 8,
-            border: "1px solid #ddd",
-            background: "white",
-            cursor: "pointer"
-          }}
-        >
-          <Eye size={18} />
-        </button>
       ),
     },
   ];

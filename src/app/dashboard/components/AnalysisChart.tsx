@@ -196,6 +196,7 @@ export default function AnalysisChart() {
           <YAxis
             tickLine={false}
             axisLine={false}
+            allowDecimals={false}
             tick={{
               fontWeight: 500,
               fontSize: 14,

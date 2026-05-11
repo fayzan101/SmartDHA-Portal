@@ -357,30 +357,6 @@ const vehicles: Vehicle[] = rawVehicles
       header: 'Tag Status',
       render: (value: number | null) => <StatusBadge type="tagStatus" value={value} />,
     },
-    {
-  key: 'action',
-  header: 'Action',
-  render: (_, row) => (
-    <div style={{ display: 'flex', gap: '6px' }}>
-      <button
-        onClick={() => handleView(row)}
-        style={{
-          width: 32,
-          height: 32,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: 8,
-          border: "1px solid #ddd",
-          background: "white",
-          cursor: "pointer"
-        }}
-      >
-        <Eye size={18} />
-      </button>
-    </div>
-  )
-}
   ];
 
   return (
