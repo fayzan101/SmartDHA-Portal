@@ -1,163 +1,131 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
-import CommonEntityForm, {
-  ProfileField,
-} from '../../components/forms/CommonEntityForm';
-import apiClient from '@/lib/apiClient';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import DashboardLayout from "../../components/layout/DashboardLayout";
+import apiClient from "@/lib/apiClient";
 
 export default function ProfilePage() {
-  const pageTitle = 'Update User';
+  const pageTitle = "View Profile";
+  const router = useRouter();
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<any>(null);
 
-  const profileFields: ProfileField[] = [
-    {
-      name: 'name',
-      label: 'Name',
-      type: 'text',
-      required: true,
-      placeholder: 'Enter Name',
-    },
-    {
-      name: 'email',
-      label: 'Email',
-      type: 'email',
-      required: true,
-      placeholder: 'Enter Email',
-    },
-    {
-      name: 'userName',
-      label: 'User Name',
-      type: 'text',
-      required: true,
-      placeholder: 'Enter User Name',
-    },
-    {
-      name: 'mobileNo',
-      label: 'Mobile Number',
-      type: 'text',
-      required: true,
-      placeholder: '0301-2345678',
-    },
-    {
-      name: 'cnic',
-      label: 'CNIC',
-      type: 'text',
-      required: true,
-      placeholder: '12345-1234567-1',
-    },
-    {
-      name: 'password',
-      label: 'Password',
-      type: 'password',
-      required: true,
-      placeholder: 'Enter Password',
-    },
-    {
-      name: 'profilePicture',
-      label: 'Profile Picture',
-      type: 'file',
-      required: false,
-    },
-  ];
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
 
-  const handleSubmit = async (
-    formData: Record<string, any>
-  ) => {
-    try {
-      setLoading(true);
-
-      const payload = new FormData();
-
-      // Get logged in user id
-      const userId =
-        localStorage.getItem('userId') || '';
-
-      payload.append('Id', userId);
-
-      payload.append(
-        'Name',
-        formData.name || ''
-      );
-
-      payload.append(
-        'Email',
-        formData.email || ''
-      );
-
-      payload.append(
-        'UserName',
-        formData.userName || ''
-      );
-
-      payload.append(
-        'MobileNo',
-        formData.mobileNo || ''
-      );
-
-      payload.append(
-        'CNIC',
-        formData.cnic || ''
-      );
-
-      payload.append(
-        'Password',
-        formData.password || ''
-      );
-
-      if (formData.profilePicture) {
-        payload.append(
-          'ProfilePicture',
-          formData.profilePicture
+        const response = await apiClient.get(
+          "/api/smartdha/user/getprofiledetail"
         );
+
+        setProfile(response.data);
+      } catch (error) {
+        console.error("Profile Fetch Error:", error);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      console.log(
-        'Update User Payload:',
-        [...payload.entries()]
-      );
+    fetchProfile();
+  }, []);
 
-      const response = await apiClient.post(
-        'api/smartdha/user/update-user',
-        payload,
-        {
-          headers: {
-            'Content-Type':
-              'multipart/form-data',
-          },
-        }
-      );
-
-    } catch (error: any) {
-      console.error(
-        'Update User Error:',
-        error
-      );
-
-      console.error(
-        'Backend Response:',
-        error?.response?.data
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  // FIELD CARD UI
+  const FieldCard = ({
+    label,
+    value,
+  }: {
+    label: string;
+    value: any;
+  }) => (
+    <div className="bg-white shadow-md rounded-xl p-4">
+      <p className="text-[#30B33D] text-sm font-medium mb-1">
+        {label}
+      </p>
+      <p className="text-gray-600 text-[15px] font-small">
+        {value || "-"}
+      </p>
+    </div>
+  );
 
   return (
     <DashboardLayout
       pageTitle={pageTitle}
       showBackButton={true}
     >
-      <CommonEntityForm
-        fields={profileFields}
-        onSave={handleSubmit}
-        loading={loading}
-        saveButtonText="Update"
-        successTitle="User Updated"
-        successMessage="User updated successfully."
-      />
+      <div className="p-6">
+
+        {/* HEADER */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-[22px] font-semibold text-black">
+              {/* User Profile */}
+            </h2>
+          </div>
+
+          {/* EDIT BUTTON */}
+          <button
+            onClick={() =>
+              router.push("/profile/edit")
+            }
+            className="bg-[#30B33D] hover:opacity-90 text-white px-5 py-2 rounded-xl text-sm font-medium transition"
+          >
+            Edit Profile
+          </button>
+        </div>
+
+        {/* LOADING */}
+        {loading ? (
+          <div className="text-center py-10 text-gray-500">
+            Loading profile...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+            {/* LEFT COLUMN */}
+            <div className="space-y-5">
+
+              <FieldCard
+                label="Name"
+                value={profile?.name}
+              />
+
+              <FieldCard
+                label="User Name"
+                value={profile?.userName}
+              />
+
+              <FieldCard
+                label="CNIC"
+                value={profile?.cnic}
+              />
+            </div>
+
+            {/* RIGHT COLUMN */}
+            <div className="space-y-5">
+
+              <FieldCard
+                label="Email"
+                value={
+                  profile?.email ||
+                  profile?.registteredEmail
+                }
+              />
+
+              <FieldCard
+                label="Mobile Number"
+                value={
+                  profile?.mobileNumber ||
+                  profile?.phoneNumber ||
+                  profile?.registteredMobileNumber
+                }
+              />
+            </div>
+          </div>
+        )}
+      </div>
     </DashboardLayout>
   );
 }
