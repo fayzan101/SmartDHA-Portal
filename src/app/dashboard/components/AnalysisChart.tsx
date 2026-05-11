@@ -35,14 +35,17 @@ export default function AnalysisChart() {
         // WEEKLY
         // =========================
         const formattedWeekly =
-          apiData.weeklyDayWiseData.map((item: any) => ({
-            label: item.dayName.slice(0, 3),
-            nonMembers: item.count,
-            members: 0,
-          }));
+          apiData.nonMember.weeklyDayWiseData.map(
+            (item: any, index: number) => ({
+              label: item.dayName.slice(0, 3),
+              nonMembers: item.count,
+              members:
+                apiData.member.weeklyDayWiseData[index]?.count || 0,
+            })
+          );
 
         // =========================
-        // MONTHLY (FIXED: last 7 months)
+        // MONTHLY
         // =========================
         const monthNames = [
           "January",
@@ -67,6 +70,7 @@ export default function AnalysisChart() {
 
         for (let i = 6; i >= 0; i--) {
           const date = new Date(currentYear, currentMonth - i, 1);
+
           last7Months.push({
             year: date.getFullYear(),
             monthIndex: date.getMonth(),
@@ -76,16 +80,24 @@ export default function AnalysisChart() {
         const formattedMonthly = last7Months.map((m) => {
           const monthName = monthNames[m.monthIndex];
 
-          const found = apiData.monthlyWiseData.find(
-            (item: any) =>
-              item.month === monthName &&
-              item.year === m.year
-          );
+          const nonMemberFound =
+            apiData.nonMember.monthWiseData.find(
+              (item: any) =>
+                item.month === monthName &&
+                item.year === m.year
+            );
+
+          const memberFound =
+            apiData.member.monthWiseData.find(
+              (item: any) =>
+                item.month === monthName &&
+                item.year === m.year
+            );
 
           return {
             label: monthName.slice(0, 3),
-            nonMembers: found?.count || 0,
-            members: 0,
+            nonMembers: nonMemberFound?.count || 0,
+            members: memberFound?.count || 0,
           };
         });
 
@@ -93,11 +105,14 @@ export default function AnalysisChart() {
         // YEARLY
         // =========================
         const formattedYearly =
-          apiData.yearlyWiseData.map((item: any) => ({
-            label: item.year.toString(),
-            nonMembers: item.count,
-            members: 0,
-          }));
+          apiData.nonMember.yearWiseData.map(
+            (item: any, index: number) => ({
+              label: item.year.toString(),
+              nonMembers: item.count,
+              members:
+                apiData.member.yearWiseData[index]?.count || 0,
+            })
+          );
 
         setWeeklyData(formattedWeekly);
         setMonthlyData(formattedMonthly);

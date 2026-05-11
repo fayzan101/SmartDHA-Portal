@@ -55,7 +55,7 @@ export default function ProfilePage() {
       pageTitle={pageTitle}
       showBackButton={true}
     >
-      <div className="bg-white rounded-2xl shadow-sm p-6">
+      <div className="p-6">
 
         {/* HEADER */}
         <div className="flex items-center justify-between mb-6">

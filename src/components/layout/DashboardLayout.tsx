@@ -58,11 +58,22 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
       setSearchLoading(true);
       setSearchError(null);
     } else if (externalSearchMutation.status === "success") {
-      const data: import("../../services/dashboard.service").ExternalSearchResponse = externalSearchMutation.data;
-      setSearchResults(data?.data?.items || []);
-      setSearchLoading(false);
-      setSearchError(null);
-    } else if (externalSearchMutation.status === "error") {
+  console.log("SEARCH RESPONSE:", externalSearchMutation.data);
+
+  const data: any = externalSearchMutation.data;
+
+  setSearchResults(
+    data?.items ||
+    data?.data?.items ||
+    data?.data ||
+    data ||
+    []
+  );
+
+  setSearchLoading(false);
+  setSearchError(null);
+}
+     else if (externalSearchMutation.status === "error") {
       setSearchLoading(false);
       setSearchError("Search failed. Please try again.");
     }
@@ -95,24 +106,29 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
   };
 
   const handleSearch = () => {
-    externalSearchMutation.mutate({
-      pageNumber: 0,
-      pageSize: 10,
-      globalSearch: searchValue,
-      name: "",
-      cnic: "",
-      phoneNumber: "",
-      tagNumber: "",
-      rfidCardNumber: "",
-      workerCardNumber: "",
-      vehicleLicensePlate: "",
-      cardStatus: 0,
-      tagStatus: 0,
-      userType: 0,
-      validFrom: new Date().toISOString(),
-      validTo: new Date().toISOString(),
-    });
-  };
+  if (!searchValue.trim()) {
+    setSearchResults([]);
+    return;
+  }
+
+  externalSearchMutation.mutate({
+    pageNumber: 1,
+    pageSize: 10,
+    globalSearch: searchValue.trim(),
+    name: "",
+    cnic: "",
+    phoneNumber: "",
+    tagNumber: "",
+    rfidCardNumber: "",
+    workerCardNumber: "",
+    vehicleLicensePlate: "",
+    cardStatus: 0,
+    tagStatus: 0,
+    userType: 0,
+    validFrom: "",
+    validTo: "",
+  });
+};
 
   return (
     <div className={styles.dashboardWrapper}>
@@ -233,19 +249,37 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
             <div className={styles.headerTitle}>{pageTitle}</div>
           </div>
           <div className={styles.headerRight}>
-            <div className={styles.searchBox}>
-              <input
-                type="text"
-                placeholder="Search"
-                className={styles.searchInput}
-                value={searchValue}
-                onChange={e => setSearchValue(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === "Enter") handleSearch();
-                }}
-              />
-              <CircularButton imagePath="/icons/Search Icon.svg" imageAlt="Search" width={32} height={32} onClick={handleSearch} pos="abs"/>
-            </div>
+  {/* HIDE SEARCH ON DASHBOARD + UPDATE PROFILE */}
+  {pathname !== "/dashboard" &&
+    pathname !== "/profile/edit" && (
+      <div className={styles.searchBox}>
+        <input
+          type="text"
+          placeholder="Search"
+          className={styles.searchInput}
+          value={searchValue}
+          onChange={(e) => {
+  setSearchValue(e.target.value);
+
+  if (!e.target.value) {
+    setSearchResults([]);
+  }
+}}
+          onKeyDown={e => {
+            if (e.key === "Enter") handleSearch();
+          }}
+        />
+
+        <CircularButton
+          imagePath="/icons/Search Icon.svg"
+          imageAlt="Search"
+          width={32}
+          height={32}
+          onClick={handleSearch}
+          pos="abs"
+        />
+      </div>
+  )}
             {searchLoading && (
               <div style={{ marginTop: 8, color: '#888' }}>Searching...</div>
             )}
@@ -253,19 +287,69 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
               <div style={{ marginTop: 8, color: 'red' }}>{searchError}</div>
             )}
             {searchResults.length > 0 && (
-              <div style={{ marginTop: 8, background: '#fff', border: '1px solid #eee', borderRadius: 4, maxHeight: 200, overflowY: 'auto', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                <ul style={{ listStyle: 'none', margin: 0, padding: 8 }}>
-                  {searchResults.map((item, idx) => (
-                    <li key={idx} style={{ padding: '4px 0', borderBottom: '1px solid #f0f0f0' }}>
-                      {typeof item === 'object' ? JSON.stringify(item) : String(item)}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            <Link href="/notification" className={styles.notificationWrapper}>
+  <div
+    style={{
+      position: "absolute",
+      top: 70,
+      right: 180,
+      width: 320,
+      background: "#fff",
+      borderRadius: 12,
+      boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+      border: "1px solid #eee",
+      maxHeight: 320,
+      overflowY: "auto",
+      zIndex: 9999,
+    }}
+  >
+    {searchResults.map((item, idx) => (
+      <div
+        key={idx}
+        onClick={() => {
+          console.log("Selected:", item);
+
+          // OPTIONAL NAVIGATION
+          // router.push(`/user/${item.id}`);
+
+          setSearchResults([]);
+          setSearchValue("");
+        }}
+        style={{
+          padding: "12px 16px",
+          borderBottom: "1px solid #f3f4f6",
+          cursor: "pointer",
+        }}
+      >
+        <div
+          style={{
+            fontWeight: 600,
+            color: "#111827",
+            fontSize: 14,
+          }}
+        >
+          {item.name || item.fullName || "Unnamed"}
+        </div>
+
+        <div
+          style={{
+            fontSize: 12,
+            color: "#6b7280",
+            marginTop: 2,
+          }}
+        >
+          {item.cnic ||
+            item.phoneNumber ||
+            item.vehicleLicensePlate ||
+            item.tagNumber ||
+            "No details"}
+        </div>
+      </div>
+    ))}
+  </div>
+)}
+            {/* <Link href="/notification" className={styles.notificationWrapper}>
               <img src="/icons/basil_notification-on-solid.png" alt="" className={styles.notificationIconImg} />
-            </Link>
+            </Link> */}
             <div className={styles.userInfoWrapper}>
               <div 
                 className={styles.userInfo} 

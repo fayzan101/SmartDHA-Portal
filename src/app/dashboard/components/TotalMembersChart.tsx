@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+} from "recharts";
+import type { PieLabelRenderProps } from "recharts";
 import apiClient from "@/lib/apiClient";
 
-// ─────────────────────────────────────────────────────────────
-// MOCK STATS
-// ─────────────────────────────────────────────────────────────
-const MOCK_STATS = {
-  totalMembers: 2540,
-  members: 1850,
-  nonMembers: 690,
-};
+const COLORS = ["#22c55e", "#bbf7d0"];
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
@@ -22,132 +22,59 @@ type StatsType = {
 };
 
 // ─────────────────────────────────────────────────────────────
-// PIE CHART COMPONENT
+// CUSTOM LABEL
 // ─────────────────────────────────────────────────────────────
-function PieChart({
-  members,
-  nonMembers,
-}: {
-  members: number;
-  nonMembers: number;
-}) {
-  const total = members + nonMembers;
+function renderCustomLabel(props: PieLabelRenderProps) {
+  const {
+    cx = 0,
+    cy = 0,
+    midAngle = 0,
+    innerRadius = 0,
+    outerRadius = 0,
+    value = 0,
+  } = props;
 
-  const memberPct =
-    total > 0 ? Math.round((members / total) * 100) : 0;
+  const RADIAN = Math.PI / 180;
 
-  const nonMemberPct = 100 - memberPct;
+  const radius =
+    innerRadius + (outerRadius - innerRadius) * 0.5;
 
-  const cx = 100;
-  const cy = 100;
-  const r = 85;
+  const x =
+    cx + radius * Math.cos(-midAngle * RADIAN);
 
-  function polarToCartesian(
-    cx: number,
-    cy: number,
-    r: number,
-    angleDeg: number
-  ) {
-    const rad = ((angleDeg - 90) * Math.PI) / 180;
+  const y =
+    cy + radius * Math.sin(-midAngle * RADIAN);
 
-    return {
-      x: cx + r * Math.cos(rad),
-      y: cy + r * Math.sin(rad),
-    };
-  }
-
-  function slicePath(
-    cx: number,
-    cy: number,
-    r: number,
-    startAngle: number,
-    endAngle: number
-  ) {
-    const start = polarToCartesian(cx, cy, r, startAngle);
-    const end = polarToCartesian(cx, cy, r, endAngle);
-
-    const largeArc = endAngle - startAngle > 180 ? 1 : 0;
-
-    return [
-      `M ${cx} ${cy}`,
-      `L ${start.x} ${start.y}`,
-      `A ${r} ${r} 0 ${largeArc} 1 ${end.x} ${end.y}`,
-      "Z",
-    ].join(" ");
-  }
-
-  const membersEnd =
-    total > 0 ? (members / total) * 360 : 0;
-
-  const tooltipAngle =
-    membersEnd + (360 - membersEnd) / 2;
-
-  const tooltipPos = polarToCartesian(
-    cx,
-    cy,
-    r * 0.62,
-    tooltipAngle
-  );
+  const width = 38;
+  const height = 24;
 
   return (
-    <div className="flex items-center gap-1 mt-4">
-      {/* LEGENDS */}
-      <div className="flex flex-col gap-3 flex-shrink-0 pr-2">
-        <div className="flex items-center gap-2">
-          <span className="w-[9px] h-[9px] rounded-[3px] bg-[#22c55e]" />
-
-          <span className="text-[12px] text-black/50">
-            {memberPct}% Members
-          </span>
+    <g>
+      <foreignObject
+        x={x - width / 2}
+        y={y - height / 2}
+        width={width}
+        height={height}
+      >
+        <div
+          style={{
+            background: "white",
+            color: "#22c55e",
+            borderRadius: 4,
+            fontWeight: 700,
+            fontSize: 12,
+            width,
+            height,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 2px 8px #0001",
+          }}
+        >
+          {value}
         </div>
-
-        <div className="flex items-center gap-2">
-          <span className="w-[9px] h-[9px] rounded-[3px] bg-[#bbf7d0]" />
-
-          <span className="text-[12px] text-black/50">
-            {nonMemberPct}% Non-Members
-          </span>
-        </div>
-      </div>
-
-      {/* PIE */}
-      <svg width="123" height="123" viewBox="0 0 200 200">
-        {/* NON MEMBERS */}
-        <path
-          d={slicePath(100, 100, r, membersEnd, 360)}
-          fill="#bbf7d0"
-        />
-
-        {/* MEMBERS */}
-        <path
-          d={slicePath(100, 100, r, 0, membersEnd)}
-          fill="#22c55e"
-        />
-
-        {/* TOOLTIP */}
-        <g transform={`translate(${tooltipPos.x}, ${tooltipPos.y})`}>
-          <rect
-            x="-18"
-            y="-13"
-            width="36"
-            height="22"
-            rx="6"
-            fill="white"
-          />
-
-          <text
-            x="0"
-            y="2"
-            textAnchor="middle"
-            fontSize="12"
-            fontWeight="700"
-            fill="#16a34a"
-          >
-            {nonMemberPct}%
-          </text>
-        </g>
-      </svg>
-    </div>
+      </foreignObject>
+    </g>
   );
 }
 
@@ -155,104 +82,112 @@ function PieChart({
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────
 export default function TotalMembersChart() {
+  const [stats, setStats] = useState<StatsType>({
+    totalMembers: 0,
+    members: 0,
+    nonMembers: 0,
+  });
 
-  // USING MOCK DATA
-  const [stats, setStats] = useState<StatsType>(MOCK_STATS);
+  const [loading, setLoading] = useState(true);
 
-  const [loading, setLoading] = useState(false);
-
-  // ───────────────────────────────────────────────────────────
-  // OPTIONAL API
-  // ───────────────────────────────────────────────────────────
   useEffect(() => {
-    const fetchDashboardCounts = async () => {
+    const fetchAnalysis = async () => {
       try {
-        setLoading(true);
-
-        const response = await apiClient.post(
-          "/api/smartdha/dashboard/dashboard-count",
-          {}
+        const response = await apiClient.get(
+          "/api/smartdha/dashboard/analysis"
         );
 
         const data = response.data;
 
-        console.log("Dashboard Count API:", data);
+        console.log("Analysis API:", data);
 
-        // ONLY UPDATE IF API RETURNS VALID DATA
+        const members = data?.member?.total || 0;
+        const nonMembers =
+          data?.nonMember?.total || 0;
+
         setStats({
-          totalMembers:
-            data.totalMembers ??
-            data.totalmembers ??
-            MOCK_STATS.totalMembers,
-
-          members:
-            data.members ??
-            data.memberCount ??
-            MOCK_STATS.members,
-
-          nonMembers:
-            data.nonMembers ??
-            data.nonmembers ??
-            data.nonMemberCount ??
-            MOCK_STATS.nonMembers,
+          totalMembers: members + nonMembers,
+          members,
+          nonMembers,
         });
-
-      } catch (error) {
-        console.log(
-          "Dashboard Count Error, using mock data:",
-          error
-        );
-
-        // FALLBACK TO MOCK DATA
-        setStats(MOCK_STATS);
-
+      } catch (err) {
+        console.log("Analysis API error:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDashboardCounts();
+    fetchAnalysis();
   }, []);
 
+  // ✅ Dynamic chart data
+  const chartData = [
+    {
+      name: "Members",
+      value: stats.members,
+    },
+    {
+      name: "Non Members",
+      value: stats.nonMembers,
+    },
+  ];
+
   return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm w-full">
-      {/* TITLE */}
-      <p className="text-[16px] font-medium text-black">
-        Total DHA Members
-      </p>
+    <div
+      className="bg-white rounded-2xl px-1 flex flex-col h-full justify-between"
+      style={{ minHeight: 260 }}
+    >
+      <div>
+        <h2 className="font-bold mb-1 text-xl text-left">
+          Total DHA Members
+        </h2>
 
-      {/* TOTAL */}
-      <p className="text-[30px] font-bold text-[#30B33D] mt-1">
-        {loading ? "..." : stats.totalMembers}
-      </p>
+        <div className="text-green-600 text-3xl font-bold mb-2 text-left">
+          {loading ? "..." : stats.totalMembers}
+        </div>
+      </div>
 
-      {/* CHART */}
-      <PieChart
-        members={stats.members}
-        nonMembers={stats.nonMembers}
-      />
+      <div className="flex items-end justify-center gap-2">
+        {/* Legend */}
+        <div className="flex flex-col gap-2 mb-8">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="w-4 h-4 rounded bg-[#22c55e] inline-block"></span>
 
-      {/* BOTTOM STATS */}
-      <div className="grid grid-cols-2 gap-3 mt-5">
-        <div className="bg-[#F8FAFC] rounded-xl p-3">
-          <p className="text-[12px] text-gray-500">
-            Members
-          </p>
+            <span className="text-gray-700">
+              {stats.members} Members
+            </span>
+          </div>
 
-          <p className="text-[20px] font-semibold text-[#22c55e]">
-            {stats.members}
-          </p>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="w-4 h-4 rounded bg-[#bbf7d0] inline-block"></span>
+
+            <span className="text-gray-700">
+              {stats.nonMembers} Non Members
+            </span>
+          </div>
         </div>
 
-        <div className="bg-[#F8FAFC] rounded-xl p-3">
-          <p className="text-[12px] text-gray-500">
-            Non Members
-          </p>
-
-          <p className="text-[20px] font-semibold text-[#16a34a]">
-            {stats.nonMembers}
-          </p>
-        </div>
+        <ResponsiveContainer width={180} height={180}>
+          <PieChart>
+            <Pie
+              data={chartData}
+              dataKey="value"
+              outerRadius={80}
+              startAngle={270}
+              endAngle={-90}
+              label={renderCustomLabel}
+              labelLine={false}
+              stroke="none"
+            >
+              {chartData.map((entry, index) => (
+                <Cell
+                  key={index}
+                  fill={COLORS[index]}
+                />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
