@@ -8,8 +8,8 @@ export interface Luggage {
   vehicleInfo: string;
   description: string;
   luggagePassType: string | number;
-  validFrom: string;
-  validTo: string;
+  fromDate: string;
+  toDate: string;
   qrCode: string;
   tagId: string;
   pdfFilePath: string;

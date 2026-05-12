@@ -1,12 +1,10 @@
 'use client';
 import React, { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
-import { useExternalSearch } from "../../app/dashboard/hooks/useExternalSearch";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import styles from "./DashboardLayout.module.css";
 import CircularButton from "../ui/CircularButton";
-import RightSidebar from "../shared/RightSidebar";
 import apiClient from "@/lib/apiClient";
 import { em } from "framer-motion/client";
 import { useSearch } from "@/context/searchContext";
@@ -45,12 +43,8 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [activeMenuItem, setActiveMenuItem] = useState('/dashboard');
-  const [searchValue, setSearchValue] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
+  const { searchValue, setSearchValue } = useSearch();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const externalSearchMutation = useExternalSearch();
   
   const [profile, setProfile] = useState({
     name: "",
@@ -58,38 +52,13 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
     userRole: "",
     profileImage: "",
   });
-  // Optionally, handle results in state or UI
-  useEffect(() => {
-    if (externalSearchMutation.status === "pending") {
-      setSearchLoading(true);
-      setSearchError(null);
-    } else if (externalSearchMutation.status === "success") {
-  console.log("SEARCH RESPONSE:", externalSearchMutation.data);
-
-  const data: any = externalSearchMutation.data;
-
-  setSearchResults(
-    data?.items ||
-    data?.data?.items ||
-    data?.data ||
-    data ||
-    []
-  );
-
-  setSearchLoading(false);
-  setSearchError(null);
-}
-     else if (externalSearchMutation.status === "error") {
-      setSearchLoading(false);
-      setSearchError("Search failed. Please try again.");
-    }
-  }, [externalSearchMutation.status, externalSearchMutation.data, externalSearchMutation.error]);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    setActiveMenuItem(pathname ?? "");
-  }, [pathname]);
+  setActiveMenuItem(pathname ?? "");
+  setSearchValue("");
+}, [pathname, setSearchValue]);
   useEffect(() => {
   const fetchProfile = async () => {
     try {
@@ -113,30 +82,6 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
     router.push('/auth/sign-in');
   };
 
-  const handleSearch = () => {
-  if (!searchValue.trim()) {
-    setSearchResults([]);
-    return;
-  }
-
-  externalSearchMutation.mutate({
-    pageNumber: 1,
-    pageSize: 10,
-    globalSearch: searchValue.trim(),
-    name: "",
-    cnic: "",
-    phoneNumber: "",
-    tagNumber: "",
-    rfidCardNumber: "",
-    workerCardNumber: "",
-    vehicleLicensePlate: "",
-    cardStatus: 0,
-    tagStatus: 0,
-    userType: 0,
-    validFrom: "",
-    validTo: "",
-  });
-};
 
   return (
     <div className={styles.dashboardWrapper}>
@@ -297,16 +242,7 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
           placeholder="Search"
           className={styles.searchInput}
           value={searchValue}
-          onChange={(e) => {
-  setSearchValue(e.target.value);
-
-  if (!e.target.value) {
-    setSearchResults([]);
-  }
-}}
-          onKeyDown={e => {
-            if (e.key === "Enter") handleSearch();
-          }}
+          onChange={(e) => setSearchValue(e.target.value)}
         />
 
         <CircularButton
@@ -314,78 +250,10 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
           imageAlt="Search"
           width={32}
           height={32}
-          onClick={handleSearch}
           pos="abs"
         />
       </div>
   )}
-            {searchLoading && (
-              <div style={{ marginTop: 8, color: '#888' }}>Searching...</div>
-            )}
-            {searchError && (
-              <div style={{ marginTop: 8, color: 'red' }}>{searchError}</div>
-            )}
-            {searchResults.length > 0 && (
-  <div
-    style={{
-      position: "absolute",
-      top: 70,
-      right: 180,
-      width: 320,
-      background: "#fff",
-      borderRadius: 12,
-      boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-      border: "1px solid #eee",
-      maxHeight: 320,
-      overflowY: "auto",
-      zIndex: 9999,
-    }}
-  >
-    {searchResults.map((item, idx) => (
-      <div
-        key={idx}
-        onClick={() => {
-          console.log("Selected:", item);
-
-          // OPTIONAL NAVIGATION
-          // router.push(`/user/${item.id}`);
-
-          setSearchResults([]);
-          setSearchValue("");
-        }}
-        style={{
-          padding: "12px 16px",
-          borderBottom: "1px solid #f3f4f6",
-          cursor: "pointer",
-        }}
-      >
-        <div
-          style={{
-            fontWeight: 600,
-            color: "#111827",
-            fontSize: 14,
-          }}
-        >
-          {item.name || item.fullName || "Unnamed"}
-        </div>
-
-        <div
-          style={{
-            fontSize: 12,
-            color: "#6b7280",
-            marginTop: 2,
-          }}
-        >
-          {item.cnic ||
-            item.phoneNumber ||
-            item.vehicleLicensePlate ||
-            item.tagNumber ||
-            "No details"}
-        </div>
-      </div>
-    ))}
-  </div>
-)}
             {/* <Link href="/notification" className={styles.notificationWrapper}>
               <img src="/icons/basil_notification-on-solid.png" alt="" className={styles.notificationIconImg} />
             </Link> */}

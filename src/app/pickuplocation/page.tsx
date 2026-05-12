@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 
 import DataTable, {
@@ -14,6 +14,7 @@ import SuccessModal from '../../components/popup/SuccessModal';
 import WarningModal from '../../components/popup/WarningModal';
 
 import { AddNewButton } from '@/components/ui/ActionButton';
+import { useSearch } from '@/context/searchContext';
 
 // ==============================
 // TYPES
@@ -30,10 +31,14 @@ interface LocationRow {
 // ==============================
 export default function LocationPage() {
   const router = useRouter();
-
-  const [currentPage, setCurrentPage] = useState(1);
+  const searchParams = useSearchParams();
+  const { searchValue } = useSearch();
+  const [currentPage, setCurrentPage] = useState(0);
   const [pageSize] = useState(10);
-
+  const [pagination, setPagination] = useState({
+    totalPages: 0,
+    totalCount: 0,
+  });
   const [locationsRaw, setLocationsRaw] =
     useState<any[]>([]);
 
@@ -74,74 +79,65 @@ export default function LocationPage() {
   // ==============================
   // FETCH LOCATIONS
   // ==============================
-  const fetchLocations = async () => {
-    const token = getAuthToken();
+  // ==============================
+// FETCH LOCATIONS (FIXED)
+// ==============================
+const fetchLocations = async (page: number) => {
+  const token = getAuthToken();
 
-    if (!token) {
-      setError(
-        'Authentication required. Please login again.'
-      );
+  if (!token) {
+    setError('Authentication required. Please login again.');
+    return;
+  }
 
-      return;
+  setLoading(true);
+  setError('');
+
+  try {
+    const res = await fetch(
+      'https://dfpwebp.dhakarachi.org/api/smartdha/location/get-all-location',
+      {
+        method: 'POST',
+        headers: {
+          accept: '*/*',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          pageNumber: page - 1,  // ✅ CONVERT to 0-based for API
+          pageSize,
+        }),
+      }
+    );
+
+    const json = await res.json();
+
+    console.log('REQUEST PAGE (UI):', page);
+    console.log('REQUEST PAGE (API):', page - 1);
+    console.log('RESPONSE ITEMS:', json?.data?.items?.length);
+
+    if (!res.ok || !json?.success) {
+      throw new Error(json?.message || 'Failed to fetch locations');
     }
 
-    setLoading(true);
-    setError('');
+    setLocationsRaw(json?.data?.items ?? []);
 
-    try {
-      const requestBody = {
-        pageNumber: currentPage,
-        pageSize: pageSize,
-      };
+    setPagination({
+      totalPages: json?.data?.totalPages ?? 0,
+      totalCount: json?.data?.totalCount ?? 0,
+    });
 
-      const res = await fetch(
-        'https://dfpwebp.dhakarachi.org/api/smartdha/location/get-all-location',
-        {
-          method: 'POST',
-          headers: {
-            accept: '*/*',
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(requestBody),
-        }
-      );
-
-      const text = await res.text();
-
-      if (!text || text.trim() === '') {
-        setError('Empty response from API');
-        return;
-      }
-
-      const json = JSON.parse(text);
-
-      if (res.ok && json.success) {
-        const items = json?.data?.items || [];
-
-        setLocationsRaw(items);
-      } else {
-        throw new Error(
-          json.message ||
-            'Failed to fetch locations'
-        );
-      }
-    } catch (err: any) {
-      console.error(err);
-
-      setError(
-        err.message || 'Failed to load locations'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  } catch (err: any) {
+    setError(err?.message || 'Failed to load locations');
+  } finally {
+    setLoading(false);
+  }
+};
   // ==============================
   // INITIAL LOAD
   // ==============================
   useEffect(() => {
-    fetchLocations();
+    fetchLocations(currentPage);
   }, [currentPage]);
 
   // ==============================
@@ -192,7 +188,7 @@ export default function LocationPage() {
 
     setSuccessModalOpen(true);
 
-    fetchLocations();
+    fetchLocations(currentPage); // Refresh list after deletion
   } catch (err: any) {
     console.error(err);
 
@@ -224,10 +220,7 @@ export default function LocationPage() {
   const locations: LocationRow[] = useMemo(() => {
     return locationsRaw.map(
       (item: any, idx: number) => ({
-        sno:
-          (currentPage - 1) * pageSize +
-          idx +
-          1,
+        sno:idx + 1,
 
         id: item.id,
 
@@ -238,17 +231,18 @@ export default function LocationPage() {
     );
   }, [locationsRaw, currentPage, pageSize]);
 
+
+  const filteredLocations = locations.filter((item) =>
+    item.address
+      ?.toLowerCase()
+      .includes(searchValue.toLowerCase())
+  );
   // ==============================
   // PAGE CHANGE
   // ==============================
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    });
-  };
+  setCurrentPage(page); // page will be 0,1,2 from DataTable component
+};
 
   // ==============================
   // TABLE COLUMNS
@@ -376,17 +370,18 @@ export default function LocationPage() {
       >
         <AddNewButton
           onClick={handleAddLocation}
-          label="+ Add Pickup Location"
+          label=" Add Pickup Location "
         />
       </div>
 
       {/* TABLE */}
       <DataTable<LocationRow>
         columns={columns}
-        data={locations}
+        data={filteredLocations}
         loading={loading}
         currentPage={currentPage}
         onPageChange={handlePageChange}
+        totalPages={pagination.totalPages}
         error={error || undefined}
       />
 

@@ -12,11 +12,9 @@ import { useWorkerById } from '../../hooks/workers/useWorkerById';
 import { useCreateWorker } from '../../hooks/workers/useCreateWorker';
 import { useUpdateWorker } from '../../hooks/workers/useUpdateWorker';
 import { useDeleteWorker } from '../../hooks/workers/useDeleteWorker';
-import { formatDateDisplay } from '../../lib/dateUtils';
 import { workerFields } from './fields';
 import { getAllExternalUsers } from '../../services/user.service';
-import CircularButton from '../../components/ui/CircularButton';
-import { Eye } from 'lucide-react';
+import { useSearch } from '@/context/searchContext';
 
 interface Worker {
   id: string;
@@ -59,20 +57,18 @@ const toJobTypeLabel = (jobType?: number) => {
 export default function WorkersPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-
+  const { searchValue } = useSearch();
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState<SelectedWorkerRow | null>(null);
   const [localRemovedIds, setLocalRemovedIds] = useState<string[]>([]);
   const [editWorkerId, setEditWorkerId] = useState<string | undefined>();
   const [hasCheckedId, setHasCheckedId] = useState(false);
-
   const { data, isLoading, isError, error } = useWorkers(currentPage, 10);
   const { data: editWorkerDetails, isLoading: isEditWorkerLoading } = useWorkerById(editWorkerId);
   const { mutateAsync: deleteWorker, isPending: isDeleting } = useDeleteWorker();
   const { mutateAsync: createWorker } = useCreateWorker();
   const { mutateAsync: updateWorker } = useUpdateWorker();
-
   const [formError, setFormError] = useState('');
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<Worker | null>(null);
@@ -114,7 +110,16 @@ const workers =
       cardStatus: w.cardStatus ?? 0,
     }))
   );
-
+  const filteredWorkers = workers.filter((item) =>
+    item.workerName.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.jobType.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.phone.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.dob.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.cnicNicopNo.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.policeVerification.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.workerCardDelivery.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.workerCard.toLowerCase().includes(searchValue.toLowerCase())
+  );
 
   const handleAddNew = () => {
     router.push('/workers?modal=add');
@@ -329,18 +334,13 @@ const workers =
     { key: 'workerCard', header: 'Worker Card No.' },
     {     key: 'issuedDate', header: 'Issued Date' },
     { key: 'expiryDate', header: 'Expiry Date' },
-    {
-      key: 'cardStatus',
-      header: 'Card Status',
-      render: (value: number) => <StatusBadge type="tagStatus" value={value} />
-    },
   ];
 
   return (
     <DashboardLayout pageTitle="Workers">
       <DataTable<Worker>
         columns={columns}
-        data={workers}
+        data={filteredWorkers}
         loading={isLoading}
         onAddClick={handleAddNew}
         addButtonLabel="Add New"

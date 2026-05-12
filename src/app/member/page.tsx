@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import DataTable, { Column } from '../../components/tables/DataTable';
 import { Eye } from 'lucide-react';
 import FormModal from '../../components/popup/FormModal';
+import { useSearch } from '@/context/searchContext';
 
 interface Member {
   sno: number;
@@ -23,7 +25,9 @@ export default function MemberPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { searchValue } = useSearch();
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<Member | null>(null);
 
@@ -85,11 +89,19 @@ export default function MemberPage() {
     { key: 'memPk', header: 'MEM PK' },
   ];
 
+  const filteredMembers = members.filter((item) =>
+    item.name?.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.email?.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.mobileNo?.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.memberNo?.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.memPk?.toLowerCase().includes(searchValue.toLowerCase())
+  );
+
   return (
     <DashboardLayout pageTitle="Members">
       <DataTable<Member>
         columns={columns}
-        data={members}
+        data={filteredMembers}
         loading={loading}
         currentPage={currentPage}
         onPageChange={setCurrentPage}

@@ -3,48 +3,42 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import DataTable, { StatusBadge, Column } from '../../components/tables/DataTable';
-import CircularButton from '../../components/ui/CircularButton';
 import WarningModal from '../../components/popup/WarningModal';
 import FormModal from '../../components/popup/FormModal';
 import CommonEntityForm, { ProfileFormData } from '../../components/forms/CommonEntityForm';
 import { saveTableRow, clearTableRow, getTableRow } from '../../lib/tableRowStorage';
 import { formatDateDisplay } from '../../lib/dateUtils';
 import { userFamilyFields } from './fields';
-
 import { useUserFamily } from '../../hooks/user-family/useUserFamily';
 import { useRemoveUserFamily } from '../../hooks/user-family/useRemoveUserFamily';
 import { useUserFamilyById } from '../../hooks/user-family/useUserFamilyById';
 import { useCreateUserFamily } from '../../hooks/user-family/useCreateUserFamily';
 import { useUpdateUserFamily } from '../../hooks/user-family/useUpdateUserFamily';
 import type { UserFamily } from '../../services/user-family.service';
-import { Eye } from 'lucide-react';
+import { useSearch } from '@/context/searchContext';
 
 export default function UserFamilyPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+  const { searchValue } = useSearch();
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedFamily, setSelectedFamily] = useState<UserFamily | null>(null);
   const [localRemovedIds, setLocalRemovedIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [formError, setFormError] = useState('');
-
   const { data: userFamilyData = [], isLoading } = useUserFamily();
   const removeUserFamilyMutation = useRemoveUserFamily();
   const { mutateAsync: createUserFamily } = useCreateUserFamily();
   const { mutateAsync: updateUserFamily } = useUpdateUserFamily();
-
-  // Modal state
   const [editFamilyId, setEditFamilyId] = useState<string>('');
   const [hasCheckedId, setHasCheckedId] = useState(false);
   const { data: editFamilyDetails, isLoading: isEditFamilyLoading } = useUserFamilyById(editFamilyId);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<any>(null);
-
-  // Detect modal state from URL
   const modalMode = searchParams?.get('modal');
   const modalId = searchParams?.get('id');
+  const [relationEnums, setRelationEnums] = useState<any[]>([]);
 
   useEffect(() => {
     if (modalMode === 'edit') {
@@ -61,6 +55,32 @@ export default function UserFamilyPage() {
       }
     }
   }, [modalMode, modalId]);
+
+  useEffect(() => {
+  const fetchEnums = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+
+      const res = await fetch(
+        'https://dfpwebp.dhakarachi.org/api/smartdha/enum/get-all-enums?type=4',
+        {
+          method: 'GET',
+          headers: {
+            accept: '*/*',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const json = await res.json();
+      setRelationEnums(json || []);
+    } catch (err) {
+      console.error('Enum fetch failed', err);
+    }
+  };
+
+  fetchEnums();
+}, []);
 
   const handleAddNew = () => {
     router.push('/user-family?modal=add');
@@ -93,33 +113,26 @@ export default function UserFamilyPage() {
     return dateMatch ? dateMatch[0] : '';
   };
 
-  const relationIdByLabel: Record<string, number> = {
-    spouse: 0,
-    child: 1,
-    parent: 2,
-    sibling: 3,
-  };
-
-  const relationLabelById: Record<number, string> = {
-    0: 'spouse',
-    1: 'child',
-    2: 'parent',
-    3: 'sibling',
-  };
-
-  const toRelationValue = (value?: number | string | null) => {
-    if (value === null || value === undefined) return '';
-    if (typeof value === 'string') return value;
-    return relationLabelById[value] ?? '';
-  };
 
   const toRelationNumber = (value?: string | number | null) => {
-    if (value === null || value === undefined || value === '') return 0;
-    if (typeof value === 'number') return value;
-    if (value in relationIdByLabel) return relationIdByLabel[value];
-    const numeric = Number(value);
-    return Number.isNaN(numeric) ? 0 : numeric;
-  };
+  if (!value) return 0;
+
+  const found = relationEnums.find(
+    (e) => e.name?.toLowerCase() === String(value).toLowerCase()
+  );
+
+  return found?.id ?? 0;
+};
+
+const toRelationValue = (value?: number | string | null) => {
+  if (!value) return '';
+
+  const found = relationEnums.find(
+    (e) => e.id === Number(value)
+  );
+
+  return found?.name ?? '';
+};
 
   const handleAddFamily = async (data: ProfileFormData) => {
     setFormError('');
@@ -189,6 +202,10 @@ export default function UserFamilyPage() {
     }
   };
 
+    const relationOptions = relationEnums.map((e) => ({
+  label: e.name,
+  value: e.name,
+}));
 
   const handleDelete = (family: UserFamily) => {
     setSelectedFamily(family);
@@ -229,7 +246,7 @@ export default function UserFamilyPage() {
 
         phoneNumber: member.phone || '',
         cnic: member.cnic || '',
-        relation: member.relation || '',
+       relation: relationEnums.find((r) => r.id === member.relation)?.name || '',
 
         fatherOrHusbandName: member.fatherOrHusbandName || '',
         residentCardNumber: member.residentCardNumber || '',
@@ -255,7 +272,12 @@ export default function UserFamilyPage() {
     { key: 'phoneNumber', header: 'Phone' },
     { key: 'cnic', header: 'CNIC No' },
     { key: 'fatherOrHusbandName', header: 'Father/Husband Name' },
-    { key: 'relation', header: 'Relation' },
+    {
+  key: 'relation',
+  header: 'Relation',
+  render: (value: any) =>
+    relationEnums.find((r) => r.id === value)?.name || value || '-',
+},
     { key: 'residentCardNumber', header: 'Resident Card No.' },
     {
       key: 'dateOfBirth',
@@ -272,23 +294,44 @@ export default function UserFamilyPage() {
       header: 'Valid To',
       render: (value) => formatDateDisplay(value),
     },
-    {
-      key: 'cardStatus',
-      header: 'Card Status',
-      render: (value) => <StatusBadge type="userFamily" value={value} />,
-    },
-    {
-      key: 'isActive',
-      header: 'Status',
-      render: (value) => <StatusBadge type="activeInactive" value={value} />,
-    },
   ];
+
+  const filteredFamilyData = filteredData.filter((item) =>
+  String(item.name || "")
+    .toLowerCase()
+    .includes(searchValue.toLowerCase()) ||
+
+  String(item.externalUserName || "")
+    .toLowerCase()
+    .includes(searchValue.toLowerCase()) ||
+
+  String(item.phoneNumber || "")
+    .toLowerCase()
+    .includes(searchValue.toLowerCase()) ||
+
+  String(item.cnic || "")
+    .toLowerCase()
+    .includes(searchValue.toLowerCase()) ||
+
+  String(item.relation || "")
+    .toLowerCase()
+    .includes(searchValue.toLowerCase()) ||
+
+  String(item.fatherOrHusbandName || "")
+    .toLowerCase()
+    .includes(searchValue.toLowerCase()) ||
+
+  String(item.residentCardNumber || "")
+    .toLowerCase()
+    .includes(searchValue.toLowerCase())
+);
+
 
   return (
     <DashboardLayout pageTitle="User Family">
       <DataTable
         columns={columns}
-        data={filteredData}
+        data={filteredFamilyData}
         onAddClick={handleAddNew}
         addButtonLabel="Add New"
         currentPage={currentPage}
@@ -307,7 +350,11 @@ export default function UserFamilyPage() {
           title="Please provide details below!"
           onSave={handleAddFamily}
           onCancel={handleCloseModal}
-          fields={userFamilyFields}
+          fields={userFamilyFields.map((f) =>
+  f.name === 'relation'
+    ? { ...f, options: relationOptions, type: 'select' }
+    : f
+)}
           saveButtonText="Create"
           showStatusToggle={false}
         />

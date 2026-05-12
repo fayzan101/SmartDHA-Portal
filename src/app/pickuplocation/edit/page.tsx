@@ -72,14 +72,6 @@ export default function EditPickupLocationPage() {
       placeholder:
         'Enter Pickup Address',
     },
-
-    {
-      name: 'zone',
-      label: 'Zone',
-      type: 'text',
-      required: true,
-      placeholder: 'Enter Zone',
-    },
   ];
 
   // ==============================
@@ -127,9 +119,6 @@ export default function EditPickupLocationPage() {
             address:
               selectedLocation.address ||
               '',
-
-            zone:
-              selectedLocation.zone || 0,
           });
         }
       } catch (error) {
@@ -157,7 +146,6 @@ export default function EditPickupLocationPage() {
 
       const payload = {
         id: locationId,
-        zone: Number(formData.zone),
         address: formData.address,
       };
 
@@ -246,9 +234,6 @@ export default function EditPickupLocationPage() {
     }
   };
 
-  // ==============================
-  // RENDER
-  // ==============================
   return (
     <DashboardLayout
       pageTitle="Edit Pickup Location"

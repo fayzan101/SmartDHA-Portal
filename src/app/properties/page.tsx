@@ -4,12 +4,10 @@ import { useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import DataTable, { Column, StatusBadge } from '../../components/tables/DataTable';
 import FormModal from '../../components/popup/FormModal';
-import { Eye } from 'lucide-react';
 import { useProperties } from '../../hooks/properties/useProperties';
+import { useSearch } from "@/context/searchContext";
+import { useRouter, useSearchParams } from 'next/navigation';
 
-// ==============================
-// TYPES
-// ==============================
 interface PropertyRow {
   sno: number;
   id: string;
@@ -25,23 +23,15 @@ interface PropertyRow {
   status: boolean;
 }
 
-// ==============================
-// COMPONENT
-// ==============================
 export default function PropertiesPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { searchValue } = useSearch();
   const [currentPage, setCurrentPage] = useState(1);
-
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<PropertyRow | null>(null);
-
-  // ✅ USE HOOK (NO FETCH)
   const { data, isLoading, isError, error } = useProperties(currentPage -1 , 10);
-
-  // ==============================
-  // DATA MAPPING (IMPORTANT)
-  // ==============================
-  
-const flatProperties =
+  const flatProperties =
   (data?.data?.items ?? []).flatMap((user: any) =>
     (user.activeProperties ?? []).map((prop: any) => ({
       id: prop.id,
@@ -63,17 +53,21 @@ const properties: PropertyRow[] = flatProperties.map((item: any, idx: number) =>
   ...item,
   sno: idx + 1,
 }));
-  // ==============================
-  // VIEW HANDLER
-  // ==============================
+  const filteredProperties = properties.filter((item) =>
+  item.userName?.toLowerCase().includes(searchValue.toLowerCase()) ||
+  item.category?.toLowerCase().includes(searchValue.toLowerCase()) ||
+  item.subCategory?.toLowerCase().includes(searchValue.toLowerCase()) ||
+  item.phase?.toLowerCase().includes(searchValue.toLowerCase()) ||
+  item.zone?.toLowerCase().includes(searchValue.toLowerCase()) ||
+  item.street?.toLowerCase().includes(searchValue.toLowerCase()) ||
+  item.plot?.toLowerCase().includes(searchValue.toLowerCase()) ||
+  item.propertyTag?.toLowerCase().includes(searchValue.toLowerCase()) ||
+  item.possessionType?.toLowerCase().includes(searchValue.toLowerCase())
+);
   const handleView = (row: PropertyRow) => {
     setSelectedRow(row);
     setViewModalOpen(true);
   };
-
-  // ==============================
-  // TABLE COLUMNS
-  // ==============================
   const columns: Column<PropertyRow>[] = [
     { key: 'sno', header: 'S.No' },
     { key: 'userName', header: 'User Name' },
@@ -94,14 +88,11 @@ const properties: PropertyRow[] = flatProperties.map((item: any, idx: number) =>
     },
   ];
 
-  // ==============================
-  // RENDER
-  // ==============================
   return (
     <DashboardLayout pageTitle="Properties">
       <DataTable<PropertyRow>
         columns={columns}
-        data={properties}
+        data={filteredProperties}
         loading={isLoading}
         currentPage={currentPage}
         onPageChange={setCurrentPage}
@@ -115,7 +106,6 @@ const properties: PropertyRow[] = flatProperties.map((item: any, idx: number) =>
         }
       />
 
-      {/* VIEW MODAL */}
       <FormModal
         isOpen={viewModalOpen}
         onClose={() => {

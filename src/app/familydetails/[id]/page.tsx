@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import apiClient from '@/lib/apiClient';
 import DataTable, { Column } from '@/components/tables/DataTable';
+import { useSearch } from "@/context/searchContext";
 
 // ─────────────────────────────────────────────
 // HELPERS
@@ -42,7 +43,7 @@ const titleStyle = {
 // ─────────────────────────────────────────────
 export default function FamilyDetailsPage() {
   const { id: userId } = useParams();
-
+  const { searchValue } = useSearch();
   const [family, setFamily] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [workers, setWorkers] = useState<any[]>([]);
@@ -211,6 +212,7 @@ export default function FamilyDetailsPage() {
   // ✅ Possession Type
   { key: 'possessionTypeName', header: 'Possession' },
 ];
+  
 
   // ─────────────────────────────────────────────
   // UI

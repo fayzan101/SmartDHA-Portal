@@ -13,7 +13,7 @@ export interface ExternalVehicle {
   eTagId: string | null;
   validFrom: string | null;
   validTo: string | null;
-  tagStatus: number | null;
+  status: boolean | null;
   externalUserId: string;
   created: string;
   createdBy: string;

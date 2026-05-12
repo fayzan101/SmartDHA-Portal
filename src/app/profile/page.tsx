@@ -93,11 +93,6 @@ export default function ProfilePage() {
               />
 
               <FieldCard
-                label="User Name"
-                value={profile?.userName}
-              />
-
-              <FieldCard
                 label="CNIC"
                 value={profile?.cnic}
               />

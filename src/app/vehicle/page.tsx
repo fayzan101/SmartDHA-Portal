@@ -3,7 +3,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import DataTable, { StatusBadge, Column } from '../../components/tables/DataTable';
-import CircularButton from '../../components/ui/CircularButton';
 import WarningModal from '../../components/popup/WarningModal';
 import FormModal from '../../components/popup/FormModal';
 import CommonEntityForm, { ProfileFormData } from '../../components/forms/CommonEntityForm';
@@ -18,9 +17,8 @@ import { vehicleFields } from './fields';
 import { getEnumMetadata } from '../../services/enum.service';
 import { getAllExternalUsers } from '../../services/user.service';
 import type { ExternalVehicle as BaseExternalVehicle } from '../../services/vehicle.service';
-import { Eye } from "lucide-react";
+import { useSearch } from '@/context/searchContext';
 
-// Extend ExternalVehicle to include externalUserName
 interface ExternalVehicle extends BaseExternalVehicle {
   externalUserName?: string;
 }
@@ -38,7 +36,7 @@ interface Vehicle {
   eTagType: string;
   issueDate: string;
   expiryDate: string;
-  tagStatus: number | null;
+  status: boolean | null;
   ownership: string;
   make: string;
   model: string;
@@ -72,24 +70,21 @@ const formatLicensePlate = (license?: string | null, licenseNo?: number | null) 
 export default function VehiclePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-
+  const { searchValue } = useSearch();
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<SelectedVehicleRow | null>(null);
   const [localRemovedIds, setLocalRemovedIds] = useState<string[]>([]);
   const [editVehicleId, setEditVehicleId] = useState<string | undefined>();
   const [hasCheckedId, setHasCheckedId] = useState(false);
-
   const { data, isLoading, isError, error } = useVehicles(currentPage, 10);
   const { data: editVehicleDetails, isLoading: isEditVehicleLoading } = useVehicleById(editVehicleId);
   const { mutateAsync: deleteVehicle, isPending: isDeleting } = useDeleteVehicle();
   const { mutateAsync: createVehicle } = useCreateVehicle();
   const { mutateAsync: updateVehicle } = useUpdateVehicle();
-
   const [loadingEnums, setLoadingEnums] = useState(true);
   const [enumFields, setEnumFields] = useState(vehicleFields);
   const [formError, setFormError] = useState('');
-
   const modalMode = searchParams?.get('modal');
   const modalId = searchParams?.get('id');
   const [viewModalOpen, setViewModalOpen] = useState(false);
@@ -134,7 +129,7 @@ export default function VehiclePage() {
           })
         );
       } catch {
-        // fallback: leave as text if API fails
+        
       } finally {
         setLoadingEnums(false);
       }
@@ -144,7 +139,6 @@ export default function VehiclePage() {
 
   console.log('VehiclePage render with data:', data, 'isLoading:', isLoading, 'isError:', isError, 'error:', error);
 
-  // flatten nested structure: items -> vehicles
 const rawVehicles =
   data?.data?.items?.flatMap((group) =>
     (group.vehicles || []).map((v) => ({
@@ -169,12 +163,31 @@ const vehicles: Vehicle[] = rawVehicles
     model: item.model || '-',
     year: item.year || '-',
     color: item.color || '-',
-    tagStatus: item.tagStatus ?? null,
+    status: item.status ?? null,
   }));
   const handleView = (vehicle: Vehicle) => {
   setSelectedRow(vehicle);
   setViewModalOpen(true);
   };
+
+  const filteredVehicles = vehicles.filter((item) => {
+  const query = searchValue.toLowerCase();
+
+  return (
+    (item.licensePlate || '').toLowerCase().includes(query) ||
+    (item.vehicleETagId || '').toLowerCase().includes(query) ||
+    (item.eTagType || '').toLowerCase().includes(query) ||
+    (item.issueDate || '').toLowerCase().includes(query) ||
+    (item.expiryDate || '').toLowerCase().includes(query) ||
+    (item.ownership || '').toLowerCase().includes(query) ||
+    (item.externalUserName || '').toLowerCase().includes(query) ||
+    (item.make || '').toLowerCase().includes(query) ||
+    (item.model || '').toLowerCase().includes(query) ||
+    (item.year || '').toLowerCase().includes(query) ||
+    (item.color || '').toLowerCase().includes(query)
+  );
+});
+    
 
   const handleAddNew = () => {
     router.push('/vehicle?modal=add');
@@ -273,7 +286,7 @@ const vehicles: Vehicle[] = rawVehicles
       eTagId: data.eTagId || '',
       issueDate: toDateInputValue(data.validFrom),
       expiryDate: toDateInputValue(data.validTo),
-      eTagStatus: data.tagStatus === 1 ? 'active' : 'inactive',
+      status: data.status === true ? 'active' : 'inactive',
       isActive: data.isActive,
     };
   }, [editVehicleDetails]);
@@ -353,17 +366,33 @@ const vehicles: Vehicle[] = rawVehicles
       ),
     },
     {
-      key: 'tagStatus',
-      header: 'Tag Status',
-      render: (value: number | null) => <StatusBadge type="tagStatus" value={value} />,
-    },
+  key: 'status',
+  header: 'Status',
+  render: (value: boolean | null) => {
+    if (value === null || value === undefined) return '-';
+    return (
+      <span
+        style={{
+          padding: '4px 8px',
+          borderRadius: '12px',
+          fontSize: '12px',
+          fontWeight: 500,
+          backgroundColor: value ? '#e6f7e6' : '#fee2e2',
+          color: value ? '#2e7d32' : '#d32f2f',
+        }}
+      >
+        {value ? 'Active' : 'Inactive'}
+      </span>
+    );
+  }
+}
   ];
 
   return (
     <DashboardLayout pageTitle="Vehicle">
       <DataTable<Vehicle>
         columns={columns}
-        data={vehicles}
+        data={filteredVehicles}
         loading={isLoading}
         onAddClick={handleAddNew}
         addButtonLabel="Add New"
