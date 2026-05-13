@@ -85,7 +85,7 @@ export default function EditVehicle() {
         eTagId: data.data.eTagId || '',
         issueDate: toDateInputValue(data.data.validFrom),
         expiryDate: toDateInputValue(data.data.validTo),
-        tagStatus: data.data.tagStatus === 1 ? 'active' : 'inactive',
+        //tagStatus: data.data.tagStatus === 1 ? 'active' : 'inactive',
         isActive: data.data.isActive,
       }
     : null;

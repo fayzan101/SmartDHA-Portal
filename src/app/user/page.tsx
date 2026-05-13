@@ -227,7 +227,7 @@ return [
     ? [{
         key: 'action',
         header: 'Action',
-        render: (_, row) => (
+        render: (_: any, row: any) => (
           <button
             onClick={() => router.push(`/familydetails/${row.userId}`)}
             style={{

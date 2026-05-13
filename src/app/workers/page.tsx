@@ -110,7 +110,7 @@ const workers =
       cardStatus: w.cardStatus ?? 0,
     }))
   );
-  const filteredWorkers = workers.filter((item) =>
+  const filteredWorkers = workers.filter((item: any) =>
     item.workerName.toLowerCase().includes(searchValue.toLowerCase()) ||
     item.jobType.toLowerCase().includes(searchValue.toLowerCase()) ||
     item.phone.toLowerCase().includes(searchValue.toLowerCase()) ||
