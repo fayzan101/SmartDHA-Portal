@@ -6,7 +6,7 @@ import DataTable, { Column, StatusBadge } from '../../components/tables/DataTabl
 import FormModal from '../../components/popup/FormModal';
 import { useProperties } from '../../hooks/properties/useProperties';
 import { useSearch } from "@/context/searchContext";
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 interface PropertyRow {
   sno: number;
@@ -23,51 +23,89 @@ interface PropertyRow {
   status: boolean;
 }
 
+type TabType = 'active' | 'inactive';
+
 export default function PropertiesPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { searchValue } = useSearch();
+
   const [currentPage, setCurrentPage] = useState(1);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<PropertyRow | null>(null);
-  const { data, isLoading, isError, error } = useProperties(currentPage -1 , 10);
-  const flatProperties =
-  (data?.data?.items ?? []).flatMap((user: any) =>
-    (user.activeProperties ?? []).map((prop: any) => ({
-      id: prop.id,
 
-      userName: user.userName || '-',
-      category: prop.categoryName || '-',
-      subCategory: prop.subCategoryName || '-',
-      phase: prop.phaseName || '-',
-      zone: prop.zoneName || '-',
-      street: prop.streetNo || '-',
-      plot: prop.plot || '-',
-      propertyTag: prop.propertyTag || '-',
-      possessionType: prop.possessionType || '-',
-      status: prop.isActive ?? false,
-    }))
+  // ✅ Tabs
+  const [tab, setTab] = useState<TabType>('active');
+
+  // ✅ API CALLS
+  const activeQuery = useProperties(currentPage - 1, 10, true);
+  const inactiveQuery = useProperties(currentPage - 1, 10, false);
+
+  // ----------------------------
+  // ACTIVE DATA
+  // ----------------------------
+  const activeProperties =
+    (activeQuery.data?.data?.items ?? []).flatMap((user: any) =>
+      (user.activeProperties ?? []).map((prop: any) => ({
+        id: prop.id,
+        userName: user.userName || '-',
+        category: prop.categoryName || '-',
+        subCategory: prop.subCategoryName || '-',
+        phase: prop.phaseName || '-',
+        zone: prop.zoneName || '-',
+        street: prop.streetNo || '-',
+        plot: prop.plot || '-',
+        propertyTag: prop.propertyTag || '-',
+        possessionType: prop.possessionType || '-',
+        status: prop.isActive ?? false,
+      }))
+    );
+
+  // ----------------------------
+  // INACTIVE DATA
+  // ----------------------------
+  const inactiveProperties =
+    (inactiveQuery.data?.data?.items ?? []).flatMap((user: any) =>
+      (user.previousProperties ?? []).map((prop: any) => ({
+        id: prop.id,
+        userName: user.userName || '-',
+        category: user.categoryName || '-',
+        subCategory: user.subCategoryName || '-',
+        phase: user.phaseName || '-',
+        zone: user.zoneName || '-',
+        street: prop.streetNo || '-',
+        plot: prop.plot || '-',
+        propertyTag: prop.propertyTag || '-',
+        possessionType: prop.possessionType || '-',
+        status: prop.isActive ?? false,
+      }))
+    );
+
+  // ----------------------------
+  // SELECT TAB DATA
+  // ----------------------------
+  const properties: PropertyRow[] =
+    (tab === 'active' ? activeProperties : inactiveProperties).map(
+      (item: any, idx: number) => ({
+        ...item,
+        sno: idx + 1,
+      })
+    );
+
+  // ----------------------------
+  // SEARCH FILTER
+  // ----------------------------
+  const filteredProperties = properties.filter((item) =>
+    item.userName?.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.category?.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.subCategory?.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.phase?.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.zone?.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.street?.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.plot?.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.propertyTag?.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.possessionType?.toLowerCase().includes(searchValue.toLowerCase())
   );
 
-const properties: PropertyRow[] = flatProperties.map((item: any, idx: number) => ({
-  ...item,
-  sno: idx + 1,
-}));
-  const filteredProperties = properties.filter((item) =>
-  item.userName?.toLowerCase().includes(searchValue.toLowerCase()) ||
-  item.category?.toLowerCase().includes(searchValue.toLowerCase()) ||
-  item.subCategory?.toLowerCase().includes(searchValue.toLowerCase()) ||
-  item.phase?.toLowerCase().includes(searchValue.toLowerCase()) ||
-  item.zone?.toLowerCase().includes(searchValue.toLowerCase()) ||
-  item.street?.toLowerCase().includes(searchValue.toLowerCase()) ||
-  item.plot?.toLowerCase().includes(searchValue.toLowerCase()) ||
-  item.propertyTag?.toLowerCase().includes(searchValue.toLowerCase()) ||
-  item.possessionType?.toLowerCase().includes(searchValue.toLowerCase())
-);
-  const handleView = (row: PropertyRow) => {
-    setSelectedRow(row);
-    setViewModalOpen(true);
-  };
   const columns: Column<PropertyRow>[] = [
     { key: 'sno', header: 'S.No' },
     { key: 'userName', header: 'User Name' },
@@ -79,33 +117,62 @@ const properties: PropertyRow[] = flatProperties.map((item: any, idx: number) =>
     { key: 'plot', header: 'Plot' },
     { key: 'propertyTag', header: 'Property Tag' },
     { key: 'possessionType', header: 'Possession Type' },
-    {
-      key: 'status',
-      header: 'Status',
-      render: (value: boolean) => (
-        <StatusBadge type="activeInactive" value={value} />
-      ),
-    },
   ];
 
   return (
     <DashboardLayout pageTitle="Properties">
+
+      {/* ✅ NEW TAB STYLE */}
+      <div
+        style={{
+          display: 'flex',
+          width: '100%',
+          borderBottom: '1px solid #e5e7eb',
+          marginBottom: 12,
+        }}
+      >
+        {[
+          { key: 'active', label: 'Active' },
+          { key: 'inactive', label: 'Inactive' },
+        ].map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key as TabType)}
+            style={{
+              flex: 1,
+              padding: '14px 0',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              textAlign: 'center',
+              fontWeight: tab === t.key ? 600 : 500,
+              color: tab === t.key ? '#22c55e' : '#6b7280',
+              borderBottom:
+                tab === t.key
+                  ? '2px solid #22c55e'
+                  : '2px solid transparent',
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
       <DataTable<PropertyRow>
         columns={columns}
         data={filteredProperties}
-        loading={isLoading}
+        loading={activeQuery.isLoading || inactiveQuery.isLoading}
         currentPage={currentPage}
         onPageChange={setCurrentPage}
         addButtonLabel={undefined}
         error={
-          isError
-            ? `Failed to load properties: ${
-                error instanceof Error ? error.message : 'Unknown error'
-              }`
+          activeQuery.isError || inactiveQuery.isError
+            ? 'Failed to load properties'
             : undefined
         }
       />
 
+      {/* VIEW MODAL */}
       <FormModal
         isOpen={viewModalOpen}
         onClose={() => {
@@ -163,6 +230,7 @@ const properties: PropertyRow[] = flatProperties.map((item: any, idx: number) =>
           </div>
         )}
       </FormModal>
+
     </DashboardLayout>
   );
 }
