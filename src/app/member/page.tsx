@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import DataTable, { Column } from '../../components/tables/DataTable';
-import { Eye } from 'lucide-react';
 import FormModal from '../../components/popup/FormModal';
 import { useSearch } from '@/context/searchContext';
 
@@ -25,61 +24,90 @@ export default function MemberPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const [totalPages, setTotalPages] = useState(1);
+
   const { searchValue } = useSearch();
+  const router = useRouter();
+
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<Member | null>(null);
 
-  useEffect(() => {
-    const fetchMembers = async () => {
-      try {
-        setLoading(true);
-        setError('');
+  // ==============================
+  // FETCH MEMBERS (PAGINATED)
+  // ==============================
+  const fetchMembers = async (page: number) => {
+    try {
+      setLoading(true);
+      setError('');
 
-        const res = await fetch(
-          'https://dfpwebp.dhakarachi.org/api/smartdha/user/members',
-          {
-            method: 'GET',
-            headers: {
-              accept: '*/*',
-              Authorization: `Bearer YOUR_TOKEN_HERE`,
-            },
-          }
-        );
+      const token =
+        localStorage.getItem('token') ||
+        sessionStorage.getItem('token');
 
-        const json = await res.json();
+      const res = await fetch(
+        'https://dfpwebp.dhakarachi.org/api/smartdha/user/members',
+        {
+          method: 'POST',
+          headers: {
+            accept: '*/*',
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            pageNumber: page - 1, // API is 0-based
+            pageSize: 10,
+          }),
+        }
+      );
 
-        const mapped: Member[] = (json?.data || []).map(
-          (item: any, idx: number) => ({
-            sno: idx + 1,
-            userId: item.userId,
-            name: item.name,
-            email: item.email || '-',
-            mobileNo: item.mobileNo || '-',
-            memberNo: item.memberNo || '-',
-            memPk: item.memPk || '-',
-            userType: item.userType,
-            staffNo: item.staffNo || '-',
-          })
-        );
+      const json = await res.json();
+      const data = json?.data;
 
-        setMembers(mapped);
-      } catch (err: any) {
-        setError(err?.message || 'Failed to load members');
-      } finally {
-        setLoading(false);
+      if (!data) {
+        setMembers([]);
+        return;
       }
-    };
 
-    fetchMembers();
+      setTotalPages(data.totalPages || 1);
+
+      const mapped: Member[] = (data.items || []).map(
+        (item: any, idx: number) => ({
+          sno: (page - 1) * 10 + idx + 1,
+          userId: item.userId,
+          name: item.name,
+          email: item.email || '-',
+          mobileNo: item.mobileNo || '-',
+          memberNo: item.memberNo || '-',
+          memPk: item.memPk || '-',
+          userType: item.userType,
+          staffNo: item.staffNo || '-',
+        })
+      );
+
+      setMembers(mapped);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load members');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // load on page change
+  useEffect(() => {
+    fetchMembers(currentPage);
   }, [currentPage]);
 
+  // ==============================
+  // VIEW MODAL
+  // ==============================
   const handleView = (row: Member) => {
     setSelectedRow(row);
     setViewModalOpen(true);
   };
 
+  // ==============================
+  // TABLE COLUMNS
+  // ==============================
   const columns: Column<Member>[] = [
     { key: 'sno', header: 'S.No' },
     { key: 'name', header: 'Name' },
@@ -89,6 +117,9 @@ export default function MemberPage() {
     { key: 'memPk', header: 'MEM PK' },
   ];
 
+  // ==============================
+  // SEARCH FILTER
+  // ==============================
   const filteredMembers = members.filter((item) =>
     item.name?.toLowerCase().includes(searchValue.toLowerCase()) ||
     item.email?.toLowerCase().includes(searchValue.toLowerCase()) ||
@@ -104,11 +135,12 @@ export default function MemberPage() {
         data={filteredMembers}
         loading={loading}
         currentPage={currentPage}
+        totalPages={totalPages}
         onPageChange={setCurrentPage}
-        addButtonLabel={undefined}
         error={error || undefined}
       />
 
+      {/* VIEW MODAL */}
       <FormModal
         isOpen={viewModalOpen}
         onClose={() => {

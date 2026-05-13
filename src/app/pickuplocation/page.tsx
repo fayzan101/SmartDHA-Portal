@@ -64,12 +64,12 @@ export default function LocationPage() {
   // GET TOKEN
   // ==============================
   const getAuthToken = () => {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('token');
 
     if (token) return token;
 
     const sessionToken =
-      sessionStorage.getItem('authToken');
+      sessionStorage.getItem('token');
 
     if (sessionToken) return sessionToken;
 

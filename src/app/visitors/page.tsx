@@ -102,7 +102,10 @@ const visitors = rawVisitors
     visitorName: item.name || '-',
     cnicNicopNo: item.cnic || '-',
 
-    vehicleInfo: `${item.vehicleLicense || ''}${item.vehicleLicenseNo ? `-${item.vehicleLicenseNo}` : ''}` || '-',
+    vehicleInfo:
+  item.vehicleLicense || item.vehicleLicenseNo
+    ? `${item.vehicleLicense || ''}${item.vehicleLicenseNo ? `-${item.vehicleLicenseNo}` : ''}`
+    : '-',
     visitDetail:
       item.visitorPassType === 'DayPass' || item.visitorPassType === 1
         ? 'Day Pass'
@@ -328,11 +331,6 @@ const visitors = rawVisitors
   addButtonLabel="Add New"
   currentPage={currentPage}
   onPageChange={setCurrentPage}
-  totalItems={
-    (data?.data?.upcomingVisitors?.length || 0) +
-    (data?.data?.previousVisitors?.length || 0)
-  }
-  pageSize={10}
   getRowStatus={(row) => row.status ? 'Active' : 'Inactive'}
   error={
     isError

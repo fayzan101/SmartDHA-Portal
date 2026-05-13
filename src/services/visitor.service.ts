@@ -24,6 +24,8 @@ export interface ExternalVisitorPass {
   lastModifiedBy: string;
   isDeleted: boolean;
   isActive: boolean;
+  totalItems?: number;
+pageSize?: number;
 }
 
 export interface ApiResponse<T> {
@@ -83,7 +85,10 @@ export const getAllExternalVisitorPass = async (
 ): Promise<GetAllExternalVisitorPassResponse> => {
   const { data } = await apiClient.post(
     "/api/smartdha/visitorpass/get-all-visitors",
-    { pageNumber, pageSize }
+    {
+  pageNumber: pageNumber - 1,
+  pageSize
+}
   );
   return data;
 };
