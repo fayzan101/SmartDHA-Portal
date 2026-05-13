@@ -1,13 +1,9 @@
 'use client';
 
-// ============================================================================
-// IMPORTS
-// ============================================================================
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import DataTable, { Column, StatusBadge } from '../../components/tables/DataTable';
-import CircularButton from '../../components/ui/CircularButton';
 import WarningModal from '../../components/popup/WarningModal';
 import FormModal from '../../components/popup/FormModal';
 import CommonEntityForm, { ProfileFormData } from '../../components/forms/CommonEntityForm';
@@ -21,11 +17,8 @@ import { formatDateDisplay } from '../../lib/dateUtils';
 import { luggageFields } from './fields';
 import { getAllExternalUsers } from '../../services/user.service';
 import type { Luggage } from '../../services/luggage.service';
-import { Eye } from 'lucide-react';
+import { useSearch } from "@/context/searchContext";
 
-// ============================================================================
-// TYPES & INTERFACES
-// ============================================================================
 interface LuggagePass {
   id: string;
   name: string;
@@ -40,47 +33,30 @@ interface LuggagePass {
 
 type SelectedLuggageRow = Pick<Luggage, 'id'>;
 
-// ============================================================================
-// UTILITIES
-// ============================================================================
-/**
- * Convert pass type to display label
- */
 const toLuggagePassTypeLabel = (passType?: string | number): string => {
   if (passType === 'DayPass' || passType === 1) return 'Day Pass';
   if (passType === 'LongDay' || passType === 2) return 'Long Stay';
   return '-';
 };
 
-// ============================================================================
-// COMPONENT
-// ============================================================================
 export default function LuggagePage() {
-  // -----------------------------------------------------------------------
-  // Hooks
-  // -----------------------------------------------------------------------
   const router = useRouter();
   const searchParams = useSearchParams();
-
+  const { searchValue } = useSearch();
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedLuggage, setSelectedLuggage] = useState<SelectedLuggageRow | null>(null);
   const [localRemovedIds, setLocalRemovedIds] = useState<string[]>([]);
   const [formError, setFormError] = useState('');
-
   const { data, isLoading, isError, error } = useLuggage(1, 10);
   const { mutateAsync: deleteLuggage, isPending: isDeleting } = useDeleteLuggage();
   const { mutateAsync: createLuggage } = useCreateLuggage();
   const { mutateAsync: updateLuggage } = useUpdateLuggage();
-
-  // Modal state
   const [editLuggageId, setEditLuggageId] = useState<string | undefined>();
   const [hasCheckedId, setHasCheckedId] = useState(false);
   const { data: editLuggageDetails, isLoading: isEditLuggageLoading } = useLuggageById(editLuggageId);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<LuggagePass | null>(null);
-
-  // Detect modal state from URL
   const modalMode = searchParams?.get('modal');
   const modalId = searchParams?.get('id');
 
@@ -99,10 +75,27 @@ export default function LuggagePage() {
       }
     }
   }, [modalMode, modalId]);
-
-  // -----------------------------------------------------------------------
-  // Data Transformation Utilities
-  // -----------------------------------------------------------------------
+const getValidDate = (val: any) => {
+  if (!val) return null;
+  
+  // If it's already a string in YYYY-MM-DD format
+  if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}/)) {
+    return val.split('T')[0].split(' ')[0];
+  }
+  
+  // Try to create a date object
+  try {
+    const date = new Date(val);
+    if (!isNaN(date.getTime())) {
+      return date.toISOString().split('T')[0];
+    }
+  } catch (e) {
+    console.error('Date parsing error:', e);
+  }
+  
+  // If all else fails, return the raw value to see what it is
+  return String(val);
+};
   const toDateInputValue = (value?: string) => {
     if (!value) return '';
     const dateMatch = String(value).match(/^\d{4}-\d{2}-\d{2}/);
@@ -114,7 +107,12 @@ export default function LuggagePage() {
     const dateMatch = String(value).match(/^\d{4}-\d{2}-\d{2}/);
     return dateMatch ? dateMatch[0] : '';
   };
-
+  const formatSafeDate = (value?: string | null) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return '-';
+  return date.toISOString().split('T')[0];
+};
   const toVehicleLicensePlate = (vehicleNo?: string, vehicleNo2?: string) => {
     const firstPart = (vehicleNo ?? '').trim();
     const secondPart = (vehicleNo2 ?? '').trim();
@@ -145,9 +143,6 @@ export default function LuggagePage() {
   setViewModalOpen(true);
   };
 
-  // -----------------------------------------------------------------------
-  // Form Handlers
-  // -----------------------------------------------------------------------
   const handleAddLuggage = async (data: ProfileFormData) => {
     setFormError('');
     try {
@@ -191,14 +186,12 @@ export default function LuggagePage() {
     return {
       fullName: data.name || '',
       cnic: data.cnic || '',
-      vehicleNo: data.vehicleLicensePlate?.split('-')[0] || '',
-      vehicleNo2: data.vehicleLicensePlate?.split('-')[1] || '',
-      licensePlate: data.vehicleLicensePlate || '',
+      vehicleNo: data.vehicleInfo,
       qrReference: data.qrCode || '',
       status: data.isActive ? 'active' : 'inactive',
       quickPick: toQuickPick(data.luggagePassType),
-      fromDate: toDateInputValue(data.validFrom),
-      toDate: toDateInputValue(data.validTo),
+      fromDate: toDateInputValue(data.fromDate),
+      toDate: toDateInputValue(data.toDate),
       description: data.description || '',
       isActive: data.isActive,
     };
@@ -216,7 +209,7 @@ export default function LuggagePage() {
         name: formData.fullName || luggageData.name || '',
         cnic: formData.cnic || luggageData.cnic || '',
         vehicleLicensePlate: toVehicleLicensePlate(formData.vehicleNo, formData.vehicleNo2),
-        vehicleLicenseNo: Number(formData.vehicleNo2 || luggageData.vehicleLicenseNo || 0),
+        vehicleLicenseNo: Number(formData.vehicleNo2 || 0),
         luggagePassType: luggagePassType || luggageData.luggagePassType || 1,
         validFrom: toIsoDate(formData.fromDate),
         validTo: toIsoDate(formData.toDate),
@@ -230,16 +223,11 @@ export default function LuggagePage() {
     }
   };
 
-  // -----------------------------------------------------------------------
-  // Data Transformation
-  // -----------------------------------------------------------------------
-  // STEP 1: extract correct arrays from API
 const rawList = [
   ...(data?.data?.upcomingLuggage || []),
   ...(data?.data?.previousLuggage || [])
 ];
 
-// NOW filter + map CORRECTLY
 const luggagePasses: LuggagePass[] = rawList
   .filter((item) => item && !localRemovedIds.includes(item.id))
   .map((item, idx) => ({
@@ -247,16 +235,21 @@ const luggagePasses: LuggagePass[] = rawList
     id: item.id,
     name: item.name,
     userName: item.externalUserName || '-',
-    vehicleInfo: item.vehicleLicensePlate || '-',
+    vehicleInfo: item.vehicleInfo || '-',
     visitDetail: toLuggagePassTypeLabel(item.luggagePassType),
-    validity: `${formatDateDisplay(item.validFrom)} - ${formatDateDisplay(item.validTo)}`,
+    validity:`${getValidDate(item.fromDate) ?? '-'} - ${getValidDate(item.toDate) ?? '-'}`,
     cnicNicopNo: item.cnic,
     status: item.isActive && !item.isDeleted,
   }));
+  const filteredLuggagePasses = luggagePasses.filter((item) =>
+  item.name?.toLowerCase().includes(searchValue.toLowerCase()) ||
+  item.userName?.toLowerCase().includes(searchValue.toLowerCase()) ||
+  item.vehicleInfo?.toLowerCase().includes(searchValue.toLowerCase()) ||
+  item.visitDetail?.toLowerCase().includes(searchValue.toLowerCase()) ||
+  item.cnicNicopNo?.toLowerCase().includes(searchValue.toLowerCase()) ||
+  item.validity?.toLowerCase().includes(searchValue.toLowerCase())
+);
 
-  // -----------------------------------------------------------------------
-  // Event Handlers
-  // -----------------------------------------------------------------------
   const handleAddNew = () => {
     router.push('/luggage?modal=add');
   };
@@ -283,16 +276,13 @@ const luggagePasses: LuggagePass[] = rawList
         setLocalRemovedIds((prev) => [...prev, selectedLuggage.id]);
       }
     } catch {
-      // Keep modal flow stable even when API fails.
+      
     }
 
     setDeleteModalOpen(false);
     setSelectedLuggage(null);
   };
 
-  // -----------------------------------------------------------------------
-  // Table Columns Configuration
-  // -----------------------------------------------------------------------
   const columns: Column<LuggagePass>[] = [
     { key: 'sno', header: 'S.No' },
     { key: 'name', header: 'Name' },
@@ -300,46 +290,13 @@ const luggagePasses: LuggagePass[] = rawList
     { key: 'visitDetail', header: 'Visit Detail' },
     { key: 'validity', header: 'Validity' },
     { key: 'cnicNicopNo', header: 'CNIC/NICOP No.' },
-    {
-      key: 'status',
-      header: 'Status',
-      render: (value: boolean) => <StatusBadge type="activeInactive" value={value} />,
-    },
-    {
-  key: 'action',
-  header: 'Action',
-  render: (_, row) => (
-    <div style={{ display: 'flex', gap: '6px' }}>
-      <button
-        onClick={() => handleView(row)}
-        style={{
-          width: 32,
-          height: 32,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: 8,
-          border: "1px solid #ddd",
-          background: "white",
-          cursor: "pointer"
-        }}
-      >
-        <Eye size={18} />
-      </button>
-    </div>
-  ),
-}
   ];
 
-  // -----------------------------------------------------------------------
-  // Render
-  // -----------------------------------------------------------------------
   return (
     <DashboardLayout pageTitle="Luggage">
-      {/* Data Table */}
       <DataTable<LuggagePass>
         columns={columns}
-        data={luggagePasses}
+        data={filteredLuggagePasses}
         loading={isLoading}
         onAddClick={handleAddNew}
         addButtonLabel="Add New"
@@ -353,7 +310,6 @@ const luggagePasses: LuggagePass[] = rawList
         }
       />
 
-      {/* ADD LUGGAGE MODAL */}
       <FormModal
         isOpen={modalMode === 'add'}
         onClose={handleCloseModal}
@@ -370,7 +326,6 @@ const luggagePasses: LuggagePass[] = rawList
         />
       </FormModal>
 
-      {/* EDIT LUGGAGE MODAL */}
       <FormModal
         isOpen={modalMode === 'edit' && hasCheckedId}
         onClose={handleCloseModal}
@@ -437,7 +392,6 @@ const luggagePasses: LuggagePass[] = rawList
             border: "1px solid #eef2f7",
           }}
         >
-          {/* LABEL */}
           <span
             style={{
               color: "#16a34a",
@@ -448,7 +402,6 @@ const luggagePasses: LuggagePass[] = rawList
             {item.label}
           </span>
 
-          {/* VALUE */}
           <span
             style={{
               color: "#111827",
@@ -470,7 +423,6 @@ const luggagePasses: LuggagePass[] = rawList
     </div>
   )}
 </FormModal>
-      {/* Delete Confirmation Modal */}
       <WarningModal
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}

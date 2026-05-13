@@ -1,27 +1,27 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import {useSearchParams } from 'next/navigation';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import DataTable, { Column } from '../../components/tables/DataTable';
 import { useMemberTypesRequests } from '../../hooks/membertypes/useMemberTypes';
-import { Eye } from 'lucide-react';
 import FormModal from '../../components/popup/FormModal';
 import CommonEntityForm from '../../components/forms/CommonEntityForm';
 import { nonMemberFields } from './nonmemberfield';
 import { useRouter } from 'next/navigation';
+import { useSearch } from '@/context/searchContext';
 
 export default function NonMemberPage() {
   const { data = [], isLoading } = useMemberTypesRequests();
-
+  const searchParams = useSearchParams();
+  const { searchValue } = useSearch();
   const [mainTab, setMainTab] = useState('residentialCommercial');
   const [subTab, setSubTab] = useState('residential');
-
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<any | null>(null);
   const router = useRouter();
   const [addModalOpen, setAddModalOpen] = useState(false);
 
-  // ================= STYLE =================
   const btnStyle = {
     width: 32,
     height: 32,
@@ -34,7 +34,6 @@ export default function NonMemberPage() {
     cursor: "pointer"
   };
 
-  // ================= DATA MAP =================
   const categorizedData = useMemo(() => {
     const categories = {
       residential: [] as any[],
@@ -48,11 +47,8 @@ export default function NonMemberPage() {
 
     data.forEach((item: any) => {
       const cat = item.categoryName?.toLowerCase();
-
       if (cat === 'residential') categories.residential.push(item);
       else if (cat === 'commercial') categories.commercial.push(item);
-
-      // FIXED MATCH
       else if (cat === 'education visitor' || cat === 'educational visitor')
         categories.educationalVisitor.push(item);
 
@@ -71,7 +67,6 @@ export default function NonMemberPage() {
     return categories;
   }, [data]);
 
-  // ================= FILTER =================
   const currentData = useMemo(() => {
     if (mainTab === 'residentialCommercial') {
       return subTab === 'residential'
@@ -119,6 +114,31 @@ export default function NonMemberPage() {
     }));
   }, [currentData]);
 
+  const filteredTableData = useMemo(() => {
+  return tableData.filter((item: any) => {
+    const search = searchValue.toLowerCase();
+
+    return (
+      item.name?.toLowerCase().includes(search) ||
+      item.email?.toLowerCase().includes(search) ||
+      item.phone?.toLowerCase().includes(search) ||
+      item.cnic?.toLowerCase().includes(search) ||
+      item.subCategory?.toLowerCase().includes(search) ||
+      item.institute?.toLowerCase().includes(search) ||
+      item.employerRegNo?.toLowerCase().includes(search) ||
+      item.destination?.toLowerCase().includes(search) ||
+      item.purpose?.toLowerCase().includes(search) ||
+      item.vehicle?.toLowerCase().includes(search) ||
+      item.phase?.toLowerCase().includes(search) ||
+      item.zone?.toLowerCase().includes(search) ||
+      item.khayaban?.toLowerCase().includes(search) ||
+      item.lane?.toLowerCase().includes(search) ||
+      item.plot?.toLowerCase().includes(search) ||
+      item.floors?.toString().toLowerCase().includes(search)
+    );
+  });
+}, [tableData, searchValue]);
+
   const handleView = (row: any) => {
     setSelectedRow(row);
     setViewModalOpen(true);
@@ -137,15 +157,6 @@ export default function NonMemberPage() {
         { key: 'subCategory', header: 'Sub Category' },
         { key: 'institute', header: 'Institute' },
         { key: 'vehicle', header: 'Vehicle Info' },
-        {
-          key: 'action',
-          header: 'Action',
-          render: (_, row) => (
-            <button onClick={() => handleView(row)} style={btnStyle}>
-              <Eye size={18} />
-            </button>
-          ),
-        },
       ];
     }
 
@@ -158,15 +169,6 @@ export default function NonMemberPage() {
         { key: 'phone', header: 'Phone' },
         { key: 'subCategory', header: 'Sub Category' },
         { key: 'employerRegNo', header: 'Employer Reg No' },
-        {
-          key: 'action',
-          header: 'Action',
-          render: (_, row) => (
-            <button onClick={() => handleView(row)} style={btnStyle}>
-              <Eye size={18} />
-            </button>
-          ),
-        },
       ];
     }
 
@@ -178,15 +180,6 @@ export default function NonMemberPage() {
         { key: 'email', header: 'Email' },
         { key: 'phone', header: 'Phone' },
         { key: 'subCategory', header: 'Sub Category' },
-        {
-          key: 'action',
-          header: 'Action',
-          render: (_, row) => (
-            <button onClick={() => handleView(row)} style={btnStyle}>
-              <Eye size={18} />
-            </button>
-          ),
-        },
       ];
     }
 
@@ -200,15 +193,6 @@ export default function NonMemberPage() {
         { key: 'subCategory', header: 'Sub Category' },
         { key: 'destination', header: 'Destination' },
         { key: 'vehicle', header: 'Vehicle Info' },
-        {
-          key: 'action',
-          header: 'Action',
-          render: (_, row) => (
-            <button onClick={() => handleView(row)} style={btnStyle}>
-              <Eye size={18} />
-            </button>
-          ),
-        },
       ];
     }
 
@@ -222,62 +206,46 @@ export default function NonMemberPage() {
         { key: 'subCategory', header: 'Sub Category' },
         { key: 'purpose', header: 'Purpose of Visit' },
         { key: 'vehicle', header: 'Vehicle Info' },
-        {
-          key: 'action',
-          header: 'Action',
-          render: (_, row) => (
-            <button onClick={() => handleView(row)} style={btnStyle}>
-              <Eye size={18} />
-            </button>
-          ),
-        },
       ];
     }
 
     // DEFAULT (RESIDENTIAL / COMMERCIAL)
-    return [
-      { key: 'sno', header: 'S.No' },
-      { key: 'name', header: 'Name' },
-      { key: 'cnic', header: 'CNIC' },
-      { key: 'phone', header: 'Phone' },
-      { key: 'phase', header: 'Phase' },
-      { key: 'zone', header: 'Zone' },
-      { key: 'khayaban', header: 'Khayaban' },
-      { key: 'lane', header: 'Lane' },
-      { key: 'plot', header: 'Plot' },
-      { key: 'floors', header: 'Floor' },
-      {
-  key: 'action',
-  header: 'Action',
-  render: (_, row) => {
-    if (subTab === 'residential') {
-      return (
-        <button
-          onClick={() => router.push(`/familydetails/${row.userId}`)}
-          style={{
-            padding: '6px 12px',
-            borderRadius: 6,
-            border: '1px solid #22c55e',
-            background: '#22c55e',
-            color: '#fff',
-            fontSize: '12px',
-            cursor: 'pointer',
-          }}
-        >
-          View More
-        </button>
-      );
-    }
-
-    // COMMERCIAL → keep eye icon
-    return (
-      <button onClick={() => handleView(row)} style={btnStyle}>
-        <Eye size={18} />
-      </button>
-    );
-  },
-}
-    ];
+    // DEFAULT (RESIDENTIAL / COMMERCIAL)
+return [
+  { key: 'sno', header: 'S.No' },
+  { key: 'name', header: 'Name' },
+  { key: 'cnic', header: 'CNIC' },
+  { key: 'phone', header: 'Phone' },
+  { key: 'phase', header: 'Phase' },
+  { key: 'zone', header: 'Zone' },
+  { key: 'khayaban', header: 'Khayaban' },
+  { key: 'lane', header: 'Lane' },
+  { key: 'plot', header: 'Plot' },
+  { key: 'floors', header: 'Floor' },
+  // ✅ Only add action column for Residential, not for Commercial
+  ...(subTab === 'residential' 
+    ? [{
+        key: 'action',
+        header: 'Action',
+        render: (_: any, row: any) => (
+          <button
+            onClick={() => router.push(`/familydetails/${row.userId}`)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: 6,
+              border: '1px solid #22c55e',
+              background: '#22c55e',
+              color: '#fff',
+              fontSize: '12px',
+              cursor: 'pointer',
+            }}
+          >
+            View More
+          </button>
+        ),
+      }] 
+    : []),
+];
   }, [mainTab, subTab]);
 
   return (
@@ -339,7 +307,7 @@ export default function NonMemberPage() {
       <div style={{ marginTop: 16 }}>
         <DataTable
           columns={columns}
-          data={tableData}
+          data={filteredTableData}
           loading={isLoading}
           emptyMessage="No data found"
         />

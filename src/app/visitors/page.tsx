@@ -3,7 +3,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import DataTable, { StatusBadge, Column } from '../../components/tables/DataTable';
-import CircularButton from '../../components/ui/CircularButton';
 import HostDetailsModal from '../../components/ui/components/HostDetailsModal';
 import WarningModal from '../../components/popup/WarningModal';
 import FormModal from '../../components/popup/FormModal';
@@ -18,7 +17,7 @@ import { formatDateDisplay } from '../../lib/dateUtils';
 import { visitorFields } from './fields';
 import { getAllExternalUsers } from '../../services/user.service';
 import type { ExternalVisitorPass } from '../../services/visitor.service';
-import { Eye } from 'lucide-react';
+import { useSearch } from '@/context/searchContext';
 
 interface Visitor {
   id: string;
@@ -26,6 +25,7 @@ interface Visitor {
   userName?: string;
   visitorName?: string;
   vehicleInfo: string;
+  vehicleLicense?: string;
   visitDetail: string;
   validity: string;
   cnicNicopNo: string;
@@ -44,12 +44,10 @@ const toVisitorPassTypeLabel = (passType?: string | number): string => {
   return '-';
 };
 
-
-
 export default function VisitorsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-
+  const { searchValue } = useSearch();
   const [currentPage, setCurrentPage] = useState(1);
   const [hostModalOpen, setHostModalOpen] = useState(false);
   const [selectedHost, setSelectedHost] = useState<any>(null);
@@ -58,19 +56,17 @@ export default function VisitorsPage() {
   const [localRemovedIds, setLocalRemovedIds] = useState<string[]>([]);
   const [editVisitorId, setEditVisitorId] = useState<string | undefined>();
   const [hasCheckedId, setHasCheckedId] = useState(false);
-
   const { data, isLoading, isError, error } = useVisitors(currentPage, 10);
   const { data: editVisitorDetails, isLoading: isEditVisitorLoading } = useVisitorById(editVisitorId);
   const { mutateAsync: deleteVisitor, isPending: isDeleting } = useDeleteVisitor();
   const { mutateAsync: createVisitor } = useCreateVisitor();
   const { mutateAsync: updateVisitor } = useUpdateVisitor();
-
   const [formError, setFormError] = useState('');
-
   const modalMode = searchParams?.get('modal');
   const modalId = searchParams?.get('id');
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<Visitor | null>(null);
+  
 
   useEffect(() => {
     if (modalMode === 'edit') {
@@ -95,16 +91,21 @@ export default function VisitorsPage() {
   ...(data?.data?.previousVisitors || [])
 ];
 
+const pageSize = 10;
+
 const visitors = rawVisitors
   .filter((item) => item && !localRemovedIds.includes(item.id))
   .map((item, idx) => ({
-    sno: idx + 1,
+    sno: (currentPage - 1) * pageSize + idx + 1,
     id: item.id,
 
-    visitorName: item.name || '-',       // ✅ FIX
-    cnicNicopNo: item.cnic || '-',       // ✅ FIX
+    visitorName: item.name || '-',
+    cnicNicopNo: item.cnic || '-',
 
-    vehicleInfo: `${item.vehicleLicensePlate || ''}${item.vehicleLicenseNo ? `-${item.vehicleLicenseNo}` : ''}`,
+    vehicleInfo:
+  item.vehicleLicense || item.vehicleLicenseNo
+    ? `${item.vehicleLicense || ''}${item.vehicleLicenseNo ? `-${item.vehicleLicenseNo}` : ''}`
+    : '-',
     visitDetail:
       item.visitorPassType === 'DayPass' || item.visitorPassType === 1
         ? 'Day Pass'
@@ -112,8 +113,6 @@ const visitors = rawVisitors
     validity: `${formatDateDisplay(item.fromDate)} - ${formatDateDisplay(item.toDate)}`,
     status: true,
   }));
-
-
 
   const handleAddNew = () => {
     router.push('/visitors?modal=add');
@@ -226,6 +225,14 @@ const visitors = rawVisitors
     };
   }, [editVisitorDetails]);
 
+  const filteredVisitors = visitors.filter((item) =>
+    item.visitorName.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.cnicNicopNo.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.vehicleInfo.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.visitDetail.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.validity.toLowerCase().includes(searchValue.toLowerCase())
+  );
+
   const handleUpdateVisitor = async (formData: ProfileFormData) => {
     if (!editVisitorId || !editVisitorDetails?.data) return;
     setFormError('');
@@ -283,7 +290,7 @@ const visitors = rawVisitors
         setLocalRemovedIds((prev) => [...prev, selectedVisitor.id]);
       }
     } catch {
-      // Keep modal flow stable even when API fails.
+      
     }
 
     setDeleteModalOpen(false);
@@ -312,62 +319,27 @@ const visitors = rawVisitors
     { key: 'visitDetail', header: 'Visit Detail' },
     { key: 'validity', header: 'Validity' },
     { key: 'cnicNicopNo', header: 'CNIC/NICOP No.' },
-    {
-      key: 'hostDetails',
-      header: 'Host Details',
-      render: (_, row) => (
-        <CircularButton imagePath="/icons/Host.svg" imageAlt="Host" width={32} height={32} onClick={() => handleHostClick(row)} />
-      ),
-    },
-     {
-      key: 'cardStatus',
-      header: 'Card Status',
-      render: (value: number) => <StatusBadge type="tagStatus" value={value} />
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      render: (value: boolean) => <StatusBadge type="activeInactive" value={value} />,
-    },
-    {
-  key: 'action',
-  header: 'Action',
-  render: (_, row) => (
-    <div style={{ display: 'flex', gap: '6px' }}>
-      <button
-        onClick={() => handleView(row)}
-        style={{
-          width: 32,
-          height: 32,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: 8,
-          border: "1px solid #ddd",
-          background: "white",
-          cursor: "pointer"
-        }}
-      >
-        <Eye size={18} />
-      </button>
-    </div>
-  ),
-}
   ];
 
   return (
     <DashboardLayout pageTitle="Visitor">
       <DataTable<Visitor>
-        columns={columns}
-        data={visitors}
-        loading={isLoading}
-        onAddClick={handleAddNew}
-        addButtonLabel="Add New"
-        currentPage={currentPage}
-        onPageChange={setCurrentPage}
-        getRowStatus={(row) => row.status ? 'Active' : 'Inactive'}
-        error={isError ? `Failed to load visitors: ${error instanceof Error ? error.message : 'Unknown error'}` : undefined}
-      />
+  columns={columns}
+  data={filteredVisitors}
+  loading={isLoading}
+  onAddClick={handleAddNew}
+  addButtonLabel="Add New"
+  currentPage={currentPage}
+  onPageChange={setCurrentPage}
+  getRowStatus={(row) => row.status ? 'Active' : 'Inactive'}
+  error={
+    isError
+      ? `Failed to load visitors: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      : undefined
+  }
+/>
 
       <FormModal
         isOpen={modalMode === 'add'}

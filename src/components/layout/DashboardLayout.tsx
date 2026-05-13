@@ -1,13 +1,13 @@
 'use client';
 import React, { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
-import { useExternalSearch } from "../../app/dashboard/hooks/useExternalSearch";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import styles from "./DashboardLayout.module.css";
 import CircularButton from "../ui/CircularButton";
-import RightSidebar from "../shared/RightSidebar";
 import apiClient from "@/lib/apiClient";
+import { em } from "framer-motion/client";
+import { useSearch } from "@/context/searchContext";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -39,51 +39,26 @@ const getMenuIcon = (path: string, isActive: boolean): string => {
 
 export default function DashboardLayout({ children, pageTitle = "Dashboard", userName = "Ahmed Faraz", userAvatarUrl, headerAction, showBackButton }: DashboardLayoutProps) {
   const [memberTypeOpen, setMemberTypeOpen] = useState(true);
+  const [memberDropdownOpen, setMemberDropdownOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [activeMenuItem, setActiveMenuItem] = useState('/dashboard');
-  const [searchValue, setSearchValue] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
+  const { searchValue, setSearchValue } = useSearch();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const externalSearchMutation = useExternalSearch();
+  
   const [profile, setProfile] = useState({
     name: "",
+    email: "",
+    userRole: "",
     profileImage: "",
   });
-  // Optionally, handle results in state or UI
-  useEffect(() => {
-    if (externalSearchMutation.status === "pending") {
-      setSearchLoading(true);
-      setSearchError(null);
-    } else if (externalSearchMutation.status === "success") {
-  console.log("SEARCH RESPONSE:", externalSearchMutation.data);
-
-  const data: any = externalSearchMutation.data;
-
-  setSearchResults(
-    data?.items ||
-    data?.data?.items ||
-    data?.data ||
-    data ||
-    []
-  );
-
-  setSearchLoading(false);
-  setSearchError(null);
-}
-     else if (externalSearchMutation.status === "error") {
-      setSearchLoading(false);
-      setSearchError("Search failed. Please try again.");
-    }
-  }, [externalSearchMutation.status, externalSearchMutation.data, externalSearchMutation.error]);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    setActiveMenuItem(pathname ?? "");
-  }, [pathname]);
+  setActiveMenuItem(pathname ?? "");
+  setSearchValue("");
+}, [pathname, setSearchValue]);
   useEffect(() => {
   const fetchProfile = async () => {
     try {
@@ -92,6 +67,8 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
       setProfile({
         name: data.name,
         profileImage: data.profileImage?.trim() || "",
+        email: data.email,
+        userRole: data.userRole || "",
       });
       
     } catch (err) {
@@ -105,30 +82,6 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
     router.push('/auth/sign-in');
   };
 
-  const handleSearch = () => {
-  if (!searchValue.trim()) {
-    setSearchResults([]);
-    return;
-  }
-
-  externalSearchMutation.mutate({
-    pageNumber: 1,
-    pageSize: 10,
-    globalSearch: searchValue.trim(),
-    name: "",
-    cnic: "",
-    phoneNumber: "",
-    tagNumber: "",
-    rfidCardNumber: "",
-    workerCardNumber: "",
-    vehicleLicensePlate: "",
-    cardStatus: 0,
-    tagStatus: 0,
-    userType: 0,
-    validFrom: "",
-    validTo: "",
-  });
-};
 
   return (
     <div className={styles.dashboardWrapper}>
@@ -152,11 +105,10 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
             <img src={getMenuIcon('/dashboard', activeMenuItem === '/dashboard')} alt="" className={styles.menuIconImg} />
           </Link>
           <Link 
-            href="/setup" 
-            onClick={()=>localStorage.setItem('activeTab','cp-agent')}
-            className={`${activeMenuItem.includes('/setup') ? styles.menuItemActive : ''} ${styles.menuItemGap} ${styles.menuItem}`}
+            href="/pickuplocation" 
+            className={`${activeMenuItem.includes('/pickuplocation') ? styles.menuItemActive : ''} ${styles.menuItemGap} ${styles.menuItem}`}
           >
-            <span>Setup</span>
+            <span>Add Pickup Location</span>
             <img src={getMenuIcon('/setup', activeMenuItem.includes('/setup'))} alt="" className={styles.menuIconImg} />
           </Link>
           <div 
@@ -173,13 +125,45 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
           </div>
           {memberTypeOpen && (
             <>
-              <Link 
-                href="/user" 
-                className={`${(activeMenuItem === '/user' || activeMenuItem.startsWith('/user/')) ? styles.menuItemActive : ''} ${styles.menuItem}`}
-              >
-                <span>Member Type</span>
-                <img src={getMenuIcon('/user', (activeMenuItem === '/user' || activeMenuItem.startsWith('/user/')))} alt="" className={styles.menuIconImg} />
-              </Link>
+              <div>
+  {/* MAIN BUTTON */}
+  <div
+    className={`${styles.menuItem} ${
+      (activeMenuItem === '/user' || activeMenuItem === '/non-member') ||
+      activeMenuItem.startsWith('/user/')
+        ? styles.menuItemActive
+        : ''
+    }`}
+    onClick={() => setMemberDropdownOpen(!memberDropdownOpen)}
+    style={{ cursor: 'pointer' }}
+  >
+    <span>Member Type</span>
+    <img
+      src="/icons/Arrow.png"
+      alt=""
+      className={styles.menuDropdownIconImg}
+    />
+  </div>
+
+  {/* DROPDOWN */}
+  {memberDropdownOpen && (
+    <div style={{ paddingLeft: '15px' }}>
+      <Link
+        href="/user"
+        className={`${activeMenuItem === '/user' ? styles.menuItemActive : ''} ${styles.menuItem}`}
+      >
+        <span>Non Member</span>
+      </Link>
+
+      <Link
+        href="/member"
+        className={`${activeMenuItem === '/member' ? styles.menuItemActive : ''} ${styles.menuItem}`}
+      >
+        <span>Member</span>
+      </Link>
+    </div>
+  )}
+</div>
               <Link 
                 href="/user-family" 
                 className={`${(activeMenuItem === '/user-family' || activeMenuItem.startsWith('/user-family/')) ? styles.menuItemActive : ''} ${styles.menuItem}`}
@@ -258,16 +242,7 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
           placeholder="Search"
           className={styles.searchInput}
           value={searchValue}
-          onChange={(e) => {
-  setSearchValue(e.target.value);
-
-  if (!e.target.value) {
-    setSearchResults([]);
-  }
-}}
-          onKeyDown={e => {
-            if (e.key === "Enter") handleSearch();
-          }}
+          onChange={(e) => setSearchValue(e.target.value)}
         />
 
         <CircularButton
@@ -275,78 +250,10 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
           imageAlt="Search"
           width={32}
           height={32}
-          onClick={handleSearch}
           pos="abs"
         />
       </div>
   )}
-            {searchLoading && (
-              <div style={{ marginTop: 8, color: '#888' }}>Searching...</div>
-            )}
-            {searchError && (
-              <div style={{ marginTop: 8, color: 'red' }}>{searchError}</div>
-            )}
-            {searchResults.length > 0 && (
-  <div
-    style={{
-      position: "absolute",
-      top: 70,
-      right: 180,
-      width: 320,
-      background: "#fff",
-      borderRadius: 12,
-      boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-      border: "1px solid #eee",
-      maxHeight: 320,
-      overflowY: "auto",
-      zIndex: 9999,
-    }}
-  >
-    {searchResults.map((item, idx) => (
-      <div
-        key={idx}
-        onClick={() => {
-          console.log("Selected:", item);
-
-          // OPTIONAL NAVIGATION
-          // router.push(`/user/${item.id}`);
-
-          setSearchResults([]);
-          setSearchValue("");
-        }}
-        style={{
-          padding: "12px 16px",
-          borderBottom: "1px solid #f3f4f6",
-          cursor: "pointer",
-        }}
-      >
-        <div
-          style={{
-            fontWeight: 600,
-            color: "#111827",
-            fontSize: 14,
-          }}
-        >
-          {item.name || item.fullName || "Unnamed"}
-        </div>
-
-        <div
-          style={{
-            fontSize: 12,
-            color: "#6b7280",
-            marginTop: 2,
-          }}
-        >
-          {item.cnic ||
-            item.phoneNumber ||
-            item.vehicleLicensePlate ||
-            item.tagNumber ||
-            "No details"}
-        </div>
-      </div>
-    ))}
-  </div>
-)}
             {/* <Link href="/notification" className={styles.notificationWrapper}>
               <img src="/icons/basil_notification-on-solid.png" alt="" className={styles.notificationIconImg} />
             </Link> */}
@@ -357,8 +264,9 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
               >
                 <img  src={profile.profileImage || userAvatarUrl || "/icons/profile_dummy.png"}  alt="User"  className={styles.userAvatar} />
                 <div className={styles.userTextWrapper}>
-                  <span className={styles.welcomeText}>Welcome Back,</span>
                   <span className={styles.userName}> {profile.name || userName}</span>
+                  <span className={styles.welcomeText}>{profile.email}</span>
+                  <span className={styles.welcomeText}>{profile.userRole}</span>
                 </div>
                 <img src="/icons/gridicons_dropdown.png" alt="" className={styles.userDropdownImg} />
               </div>
@@ -368,7 +276,7 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
                     <span>Profile</span>
                   </Link>
                   <div className={styles.profileDropdownDivider} />
-                  <div className={styles.profileDropdownItem}>
+                  {/* <div className={styles.profileDropdownItem}>
                     <span>Notifications</span>
                     <label className={styles.toggleSwitch}>
                       <input 
@@ -378,7 +286,7 @@ export default function DashboardLayout({ children, pageTitle = "Dashboard", use
                       />
                       <span className={styles.toggleSlider}></span>
                     </label>
-                  </div>
+                  </div> */}
                   <div className={styles.profileDropdownDivider} />
                   <button className={styles.profileDropdownItem} onClick={handleLogout}>
                     <span>Logout</span>
