@@ -1,20 +1,18 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  updateExternalWorker,
-  UpdateExternalWorkerRequest,
-  UpdateExternalWorkerResponse,
-} from "../../services/worker.service";
+import { updateExternalWorker } from "../../services/worker.service";
 
 export const useUpdateWorker = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: updateExternalWorker,
-    onSuccess: (response) => {
-      const workerId = response.data?.workerId;
+    onSuccess: (response: any) => {
+      const workerId = response?.data?.workerId;
 
+      // refresh worker list
       queryClient.invalidateQueries({ queryKey: ["workers"] });
 
+      // refresh single worker cache if it exists
       if (workerId) {
         queryClient.invalidateQueries({
           queryKey: ["worker", workerId],

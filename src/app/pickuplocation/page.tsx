@@ -34,7 +34,7 @@ export default function LocationPage() {
   const searchParams = useSearchParams();
   const { searchValue } = useSearch();
   const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize] = useState(10);
+  const [pageSize] = useState(100);
   const [pagination, setPagination] = useState({
     totalPages: 0,
     totalCount: 0,
