@@ -1,478 +1,200 @@
 'use client';
+
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import DataTable, { StatusBadge, Column } from '../../components/tables/DataTable';
 import WarningModal from '../../components/popup/WarningModal';
 import FormModal from '../../components/popup/FormModal';
-import CommonEntityForm, { ProfileFormData } from '../../components/forms/CommonEntityForm';
-import { saveTableRow, clearTableRow, getTableRow } from '../../lib/tableRowStorage';
-import { useWorkers } from '../../hooks/workers/useWorkers';
-import { useWorkerById } from '../../hooks/workers/useWorkerById';
-import { useCreateWorker } from '../../hooks/workers/useCreateWorker';
-import { useUpdateWorker } from '../../hooks/workers/useUpdateWorker';
-import { useDeleteWorker } from '../../hooks/workers/useDeleteWorker';
-import { workerFields } from './fields';
-import { getAllExternalUsers } from '../../services/user.service';
+
 import { useSearch } from '@/context/searchContext';
+import { useWorkers } from '../../hooks/workers/useWorkers';
+import { useDeleteWorker } from '../../hooks/workers/useDeleteWorker';
+import { saveTableRow } from '../../lib/tableRowStorage';
 
 interface Worker {
   id: string;
   workerName: string;
-  userName: string;
   jobType: string;
   phone: string;
   dob: string;
   cnicNicopNo: string;
   policeVerification: 'Yes' | 'No';
   workerCardDelivery: string;
-  fatherOrHusbandName?: string;
   workerStatus: boolean;
   workerCard: string;
   issuedDate?: string;
   expiryDate?: string;
-  cardStatus?: number;
   sno?: number;
 }
 
-type SelectedWorkerRow = { id: string };
+const pageSize = 10;
 
 const toJobTypeLabel = (jobType?: number) => {
   switch (jobType) {
-    case 0:
-      return 'Driver';
-    case 1:
-      return 'Cook';
-    case 2:
-      return 'Guard';
-    case 3:
-      return 'Peon';
-    case 4:
-      return 'Gardener';
-    default:
-      return 'Unknown';
+    case 0: return 'Driver';
+    case 1: return 'Cook';
+    case 2: return 'Guard';
+    case 3: return 'Peon';
+    case 4: return 'Gardener';
+    default: return 'Unknown';
   }
 };
 
 export default function WorkersPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { searchValue } = useSearch();
+
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [selectedWorker, setSelectedWorker] = useState<SelectedWorkerRow | null>(null);
-  const [localRemovedIds, setLocalRemovedIds] = useState<string[]>([]);
-  const [editWorkerId, setEditWorkerId] = useState<string | undefined>();
-  const [hasCheckedId, setHasCheckedId] = useState(false);
-  const { data, isLoading, isError, error } = useWorkers(currentPage, 10);
-  const { data: editWorkerDetails, isLoading: isEditWorkerLoading } = useWorkerById(editWorkerId);
-  const { mutateAsync: deleteWorker, isPending: isDeleting } = useDeleteWorker();
-  const { mutateAsync: createWorker } = useCreateWorker();
-  const { mutateAsync: updateWorker } = useUpdateWorker();
-  const [formError, setFormError] = useState('');
+  const [selectedWorker, setSelectedWorker] = useState<{ id: string } | null>(null);
+
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<Worker | null>(null);
-  const modalMode = searchParams?.get('modal');
-  const modalId = searchParams?.get('id');
 
+  const { data, isLoading } = useWorkers();
+  const { mutateAsync: deleteWorker } = useDeleteWorker();
+
+  // =========================
+  // FLATTEN API DATA (FIX CORE ISSUE)
+  // =========================
+  const allWorkers: Worker[] = useMemo(() => {
+    const users = data ?? [];
+
+    return users.flatMap((user: any, userIdx: number) =>
+      (user.workers ?? []).map((w: any, idx: number) => ({
+        sno: userIdx * 100 + idx + 1,
+        id: w.workerId,
+        workerName: w.name || '-',
+        jobType: toJobTypeLabel(w.jobType),
+        phone: w.phoneNo || '-',
+        dob: w.dob || '-',
+        cnicNicopNo: w.cnic || '-',
+        policeVerification: w.policeVerification ? 'Yes' : 'No',
+        workerCardDelivery: String(w.workerCardDeliveryType ?? '-'),
+        workerStatus: w.isActive ?? false,
+        workerCard: w.workerCardNumber || '-',
+        issuedDate: w.validFrom || '-',
+        expiryDate: w.validTo || '-',
+      }))
+    );
+  }, [data]);
+
+  // =========================
+  // SEARCH
+  // =========================
+  const filteredWorkers = useMemo(() => {
+    return allWorkers.filter((item) =>
+      Object.values(item).join(' ').toLowerCase().includes(searchValue.toLowerCase())
+    );
+  }, [allWorkers, searchValue]);
+
+  // reset page on search
   useEffect(() => {
-    if (modalMode === 'edit') {
-      if (modalId) {
-        setEditWorkerId(modalId);
-        setHasCheckedId(true);
-      } else {
-        const selected = getTableRow<any>('workers');
-        if (selected?.id) {
-          setEditWorkerId(String(selected.id));
-          clearTableRow('workers');
-          setHasCheckedId(true);
-        }
-      }
-    }
-  }, [modalMode, modalId]);
+    setCurrentPage(1);
+  }, [searchValue]);
 
-const workers =
-  (data?.data?.items ?? []).flatMap((user: any, userIdx: number) =>
-    (user.workers ?? []).map((w: any, idx: number) => ({
-      sno: userIdx * 100 + idx + 1,
-      id: w.workerId,   // IMPORTANT FIX
-      workerName: w.name || "-",
-      jobType: w.jobType || "-",
-      phone: w.phoneNo || "-",
-      dob: w.dob || "-",
-      cnicNicopNo: w.cnic || "-",
-      policeVerification: w.policeVerification ? "Yes" : "No",
-      workerCardDelivery: w.workerCardDeliveryType || "-",
-      workerStatus: w.isActive ?? false,
-      workerCard: w.workerCardNo || "-",
-      issuedDate: w.validFrom || "-",
-      expiryDate: w.validTo || "-",
-      cardStatus: w.cardStatus ?? 0,
-    }))
-  );
-  const filteredWorkers = workers.filter((item: any) =>
-    item.workerName.toLowerCase().includes(searchValue.toLowerCase()) ||
-    item.jobType.toLowerCase().includes(searchValue.toLowerCase()) ||
-    item.phone.toLowerCase().includes(searchValue.toLowerCase()) ||
-    item.dob.toLowerCase().includes(searchValue.toLowerCase()) ||
-    item.cnicNicopNo.toLowerCase().includes(searchValue.toLowerCase()) ||
-    item.policeVerification.toLowerCase().includes(searchValue.toLowerCase()) ||
-    item.workerCardDelivery.toLowerCase().includes(searchValue.toLowerCase()) ||
-    item.workerCard.toLowerCase().includes(searchValue.toLowerCase())
-  );
+  // =========================
+  // PAGINATION
+  // =========================
+  const totalPages = Math.max(1, Math.ceil(filteredWorkers.length / pageSize));
 
-  const handleAddNew = () => {
-    router.push('/workers?modal=add');
-  };
+  const paginatedWorkers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredWorkers.slice(start, start + pageSize);
+  }, [filteredWorkers, currentPage]);
+
+  // =========================
+  // ACTIONS
+  // =========================
+  const handleAddNew = () => router.push('/workers?modal=add');
 
   const handleEdit = (worker: Worker) => {
     saveTableRow('workers', { id: worker.id });
-    router.push(`/workers?modal=edit&id=${encodeURIComponent(worker.id)}`);
+    router.push(`/workers?modal=edit&id=${worker.id}`);
   };
+
   const handleView = (worker: Worker) => {
-  setSelectedRow(worker);
-  setViewModalOpen(true);
-  };
-  const handleCloseModal = () => {
-    setEditWorkerId(undefined);
-    setHasCheckedId(false);
-    setFormError('');
-    router.push('/workers');
+    setSelectedRow(worker);
+    setViewModalOpen(true);
   };
 
-  const toDateInputValue = (value?: string | null) => {
-    if (!value) return '';
-    const dateMatch = String(value).match(/^\d{4}-\d{2}-\d{2}/);
-    return dateMatch ? dateMatch[0] : '';
-  };
-
-  const toIsoDate = (value?: string | null) => {
-    if (!value) return '';
-    const dateMatch = String(value).match(/^\d{4}-\d{2}-\d{2}/);
-    return dateMatch ? dateMatch[0] : '';
-  };
-
-  const toJobType = (value?: string): number => {
-    switch (value) {
-      case 'driver': return 0;
-      case 'cook': return 1;
-      case 'guard': return 2;
-      case 'peon': return 3;
-      case 'gardener': return 4;
-      default: return 0;
-    }
-  };
-
-  const toJobTypeFormValue = (value?: number): string => {
-    switch (value) {
-      case 0: return 'driver';
-      case 1: return 'cook';
-      case 2: return 'guard';
-      case 3: return 'peon';
-      case 4: return 'gardener';
-      default: return '';
-    }
-  };
-
-  const toCardStatus = (value?: string | number | boolean): number => {
-    if (value === undefined || value === null) return 0;
-    if (typeof value === 'boolean') return value ? 1 : 0;
-    if (typeof value === 'number') return value === 1 ? 1 : 0;
-    if (value === 'active' || value === '1') return 1;
-    return 0;
-  };
-
-  const toCardStatusFormValue = (value?: number): string => {
-    return value === 1 ? 'active' : 'inactive';
-  };
-
-  const toWorkerCardDeliveryType = (value?: string): number => {
-    if (value === 'owner') return 0;
-    if (value === 'self') return 1;
-    return 0;
-  };
-
-  const toPoliceVerification = (value?: string): boolean => {
-    return value === 'yes';
-  };
-
-  const handleAddWorker = async (data: ProfileFormData) => {
-    setFormError('');
-    try {
-      let externalUserId = 'system';
-      let createdBy = 'system';
-      try {
-        const users = await getAllExternalUsers();
-        const firstValid = users.find((u: any) => u.id);
-        if (firstValid && firstValid.id) {
-          externalUserId = firstValid.id;
-          createdBy = firstValid.name;
-        }
-      } catch {
-        externalUserId = 'system';
-        createdBy = 'system';
-      }
-
-      await createWorker({
-        ser: 0,
-        jobType: toJobType(data.jobType),
-        cnic: data.cnic || '',
-        name:data.name || '',
-        phoneNumber: data.cellNumber || '',
-        dateOfBirth: toIsoDate(data.dob),
-        fatherOrHusbandName: data.fatherOrHusbandName || '',
-        policeVerification: toPoliceVerification(data.policeVerification),
-        workerCardDeliveryType: toWorkerCardDeliveryType(data.workerCardDelivery),
-        workerCardNumber: data.workerCardNo || '',
-        validFrom: toIsoDate(data.issuedDate),
-        validTo: toIsoDate(data.expiryDate),
-        cardStatus: toCardStatus(data.cardStatus),
-        isActive: true,
-        externalUserId,
-        createdBy,
-      });
-      handleCloseModal();
-    } catch (err: any) {
-      const message = err?.response?.data?.errorMessage || err?.message || 'Failed to create worker';
-      setFormError(message);
-    }
-  };
-
-  const initialWorkerValues = useMemo<ProfileFormData | null>(() => {
-    if (!editWorkerDetails?.data) return null;
-    const data = editWorkerDetails.data;
-    return {
-      jobType: toJobTypeFormValue(data.jobType),
-      cnic: data.cnic || '',
-      name: data.name || '',
-      cellNumber: data.phoneNumber || '',
-      dob: toDateInputValue(data.dateOfBirth),
-      fatherOrHusbandName: data.fatherOrHusbandName || '',
-      policeVerification: data.policeVerification ? 'yes' : 'no',
-      workerCardDelivery: data.workerCardDeliveryType === 0 ? 'owner' : 'self',
-      workerCardNo: data.workerCardNumber || '',
-      issuedDate: toDateInputValue(data.validFrom),
-      expiryDate: toDateInputValue(data.validTo),
-      cardStatus: toCardStatusFormValue(data.cardStatus),
-      isActive: data.isActive,
-    };
-  }, [editWorkerDetails]);
-
-  const handleUpdateWorker = async (formData: ProfileFormData) => {
-    if (!editWorkerId || !editWorkerDetails?.data) return;
-    setFormError('');
-    try {
-      const workerData = editWorkerDetails.data;
-      await updateWorker({
-        id: editWorkerId,
-        ser: workerData.ser || 0,
-        jobType: toJobType(formData.jobType) ?? workerData.jobType,
-        cnic: formData.cnic || workerData.cnic || '',
-        name: formData.name || workerData.name || '',
-        phoneNumber: formData.cellNumber || workerData.phoneNumber || '',
-        dateOfBirth: toIsoDate(formData.dob || workerData.dateOfBirth),
-        fatherOrHusbandName: formData.fatherOrHusbandName || workerData.fatherOrHusbandName || '',
-        policeVerification: toPoliceVerification(formData.policeVerification) ?? workerData.policeVerification,
-        workerCardDeliveryType: toWorkerCardDeliveryType(formData.workerCardDelivery) ?? workerData.workerCardDeliveryType,
-        workerCardNumber: formData.workerCardNo || workerData.workerCardNumber || '',
-        validFrom: toIsoDate(formData.issuedDate || workerData.validFrom),
-        validTo: toIsoDate(formData.expiryDate || workerData.validTo),
-        cardStatus: toCardStatus(formData.cardStatus) ?? workerData.cardStatus,
-        isActive: formData.isActive ?? workerData.isActive,
-        externalUserId: workerData.externalUserId,
-      });
-      handleCloseModal();
-    } catch (err: any) {
-      const message = err?.response?.data?.errorMessage || err?.message || 'Failed to update worker';
-      setFormError(message);
-    }
-  };
-
-  const handleDelete = (worker: SelectedWorkerRow) => {
+  const handleDelete = (worker: { id: string }) => {
     setSelectedWorker(worker);
     setDeleteModalOpen(true);
   };
 
   const handleConfirmDelete = async () => {
-    if (!selectedWorker) {
-      return;
-    }
+    if (!selectedWorker) return;
 
-    try {
-      const response = await deleteWorker({ id: selectedWorker.id });
-      const isSuccess = response?.statusCode === 0 || response?.statusCode === 200 || response?.statusCode === 204;
-      if (isSuccess) {
-        setLocalRemovedIds((prev) => [...prev, selectedWorker.id]);
-      }
-    } catch {
-      // Keep modal flow stable even when API fails.
-    }
+    await deleteWorker({ id: selectedWorker.id });
 
     setDeleteModalOpen(false);
     setSelectedWorker(null);
   };
 
+  // =========================
+  // TABLE COLUMNS
+  // =========================
   const columns: Column<Worker>[] = [
-     {
-      key: 'sno',
-      header: 'S.No',
-    },
+    { key: 'sno', header: 'S.No' },
     { key: 'workerName', header: 'Worker Name' },
-    //{ key: 'userName', header: 'User Name' },
     { key: 'jobType', header: 'Job Type' },
     { key: 'phone', header: 'Phone' },
     { key: 'dob', header: 'DOB' },
-    { key: 'cnicNicopNo', header: 'CNIC/NICOP No.' },
-    { key: 'fatherOrHusbandName', header: 'Father/Husband Name' },
+    { key: 'cnicNicopNo', header: 'CNIC' },
     { key: 'policeVerification', header: 'Police Verification' },
-    { key: 'workerCardDelivery', header: 'Worker Card Delivery' },
-    { 
-      key: 'workerStatus', 
-      header: 'Worker Status',
-      render: (value: boolean) => <StatusBadge type="activeInactive" value={value} />
+    {
+      key: 'workerStatus',
+      header: 'Status',
+      render: (value: boolean) => (
+        <StatusBadge type="activeInactive" value={value} />
+      ),
     },
-    { key: 'workerCard', header: 'Worker Card No.' },
-    {     key: 'issuedDate', header: 'Issued Date' },
-    { key: 'expiryDate', header: 'Expiry Date' },
+    { key: 'workerCard', header: 'Card No' },
+    { key: 'issuedDate', header: 'Issued' },
+    { key: 'expiryDate', header: 'Expiry' },
   ];
 
   return (
     <DashboardLayout pageTitle="Workers">
       <DataTable<Worker>
         columns={columns}
-        data={filteredWorkers}
+        data={paginatedWorkers}
         loading={isLoading}
         onAddClick={handleAddNew}
         addButtonLabel="Add New"
         currentPage={currentPage}
+        totalPages={totalPages}
         onPageChange={setCurrentPage}
-        getRowStatus={(row) => row.workerStatus ? 'Active' : 'Inactive'}
-        error={isError ? `Failed to load workers: ${error instanceof Error ? error.message : 'Unknown error'}` : undefined}
       />
 
+      {/* VIEW MODAL */}
       <FormModal
-        isOpen={modalMode === 'add'}
-        onClose={handleCloseModal}
-        title="Add New Worker"
+        isOpen={viewModalOpen}
+        onClose={() => setViewModalOpen(false)}
+        title="Worker Details"
       >
-        {formError && <div style={{ color: 'red', marginBottom: 12 }}>{formError}</div>}
-        <CommonEntityForm
-          title="Please provide details below!"
-          onSave={handleAddWorker}
-          onCancel={handleCloseModal}
-          fields={workerFields}
-          saveButtonText="Create"
-          showStatusToggle={false}
-        />
-      </FormModal>
-
-      <FormModal
-        isOpen={modalMode === 'edit' && hasCheckedId}
-        onClose={handleCloseModal}
-        title="Edit Worker"
-      >
-        {formError && <div style={{ color: 'red', marginBottom: 12 }}>{formError}</div>}
-        {isEditWorkerLoading ? (
-          <div style={{ padding: '20px', textAlign: 'center' }}>Loading...</div>
-        ) : initialWorkerValues ? (
-          <CommonEntityForm
-            key={editWorkerId}
-            title="Please update details below!"
-            onSave={handleUpdateWorker}
-            onCancel={handleCloseModal}
-            fields={workerFields}
-            initialValues={initialWorkerValues}
-            saveButtonText="Update"
-            showStatusToggle={false}
-          />
+        {selectedRow ? (
+          <div style={{ display: 'grid', gap: 10 }}>
+            <div>Name: {selectedRow.workerName}</div>
+            <div>Job: {selectedRow.jobType}</div>
+            <div>Phone: {selectedRow.phone}</div>
+            <div>CNIC: {selectedRow.cnicNicopNo}</div>
+          </div>
         ) : (
-          <div style={{ padding: '20px', textAlign: 'center' }}>Error loading worker details</div>
+          <div>No data selected</div>
         )}
       </FormModal>
-      <FormModal
-  isOpen={viewModalOpen}
-  onClose={() => {
-    setViewModalOpen(false);
-    setSelectedRow(null);
-  }}
-  title="Worker Details"
->
-  {selectedRow ? (
-    <div
-      style={{
-        width: "380px",
-        maxWidth: "90vw",
-        margin: "0 auto",
-        display: "grid",
-        gap: "10px",
-        padding: "10px 0",
-      }}
-    >
-      {[
-        { label: "Worker Name", value: selectedRow.workerName },
-        { label: "Job Type", value: selectedRow.jobType },
-        { label: "Phone", value: selectedRow.phone },
-        { label: "DOB", value: selectedRow.dob },
-        { label: "CNIC", value: selectedRow.cnicNicopNo },
-        { label: "Police Verification", value: selectedRow.policeVerification },
-        { label: "Worker Card", value: selectedRow.workerCard },
-        { label: "Issued Date", value: selectedRow.issuedDate },
-        { label: "Expiry Date", value: selectedRow.expiryDate },
-        {
-          label: "Status",
-          value: selectedRow.workerStatus ? "Active" : "Inactive",
-        },
-        { label: "Card Status", value: selectedRow.cardStatus ?? "-" },
-      ].map((item, i) => (
-        <div
-          key={i}
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "10px 12px",
-            borderRadius: "10px",
-            background: "#f9fafb",
-            border: "1px solid #eef2f7",
-          }}
-        >
-          <span
-            style={{
-              color: "#16a34a",
-              fontWeight: 600,
-              fontSize: "13px",
-            }}
-          >
-            {item.label}
-          </span>
 
-          <span
-            style={{
-              color: "#111827",
-              fontWeight: 500,
-              fontSize: "13px",
-              textAlign: "right",
-              flex: 1,
-              wordBreak: "break-word",
-            }}
-          >
-            {item.value || "-"}
-          </span>
-        </div>
-      ))}
-    </div>
-  ) : (
-    <div style={{ textAlign: "center", padding: "20px" }}>
-      No data selected
-    </div>
-  )}
-</FormModal>
+      {/* DELETE MODAL */}
       <WarningModal
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
         title="Delete Worker"
-        message={isDeleting ? 'Deleting...' : 'Are you sure you want to delete this worker? This action cannot be undone.'}
+        message="Are you sure you want to delete this worker?"
       />
     </DashboardLayout>
   );

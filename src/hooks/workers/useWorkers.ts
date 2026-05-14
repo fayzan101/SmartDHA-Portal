@@ -1,9 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { getAllExternalWorkers } from "../../services/worker.service";
 
-export const useWorkers = (pageNumber: number, pageSize: number) => {
+export const useWorkers = () => {
   return useQuery({
-    queryKey: ["workers", pageNumber, pageSize],
-    queryFn: () => getAllExternalWorkers(pageNumber, pageSize),
+    queryKey: ["workers"],
+    queryFn: async () => {
+      const res = await getAllExternalWorkers();
+      return res?.data?.items ?? [];
+    },
   });
 };

@@ -1,462 +1,176 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+
+import { useEffect, useState, useMemo } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import DataTable, { StatusBadge, Column } from '../../components/tables/DataTable';
-import HostDetailsModal from '../../components/ui/components/HostDetailsModal';
-import WarningModal from '../../components/popup/WarningModal';
-import FormModal from '../../components/popup/FormModal';
-import CommonEntityForm, { ProfileFormData } from '../../components/forms/CommonEntityForm';
-import { saveTableRow, clearTableRow, getTableRow } from '../../lib/tableRowStorage';
-import { useVisitors } from '../../hooks/visitors/useVisitors';
-import { useVisitorById } from '../../hooks/visitors/useVisitorById';
-import { useCreateVisitor } from '../../hooks/visitors/useCreateVisitor';
-import { useUpdateVisitor } from '../../hooks/visitors/useUpdateVisitor';
-import { useDeleteVisitor } from '../../hooks/visitors/useDeleteVisitor';
-import { formatDateDisplay } from '../../lib/dateUtils';
-import { visitorFields } from './fields';
-import { getAllExternalUsers } from '../../services/user.service';
-import type { ExternalVisitorPass } from '../../services/visitor.service';
+import DataTable, { Column } from '../../components/tables/DataTable';
 import { useSearch } from '@/context/searchContext';
 
 interface Visitor {
+  sno: number;
   id: string;
-  name?: string;
-  userName?: string;
-  visitorName?: string;
+  visitorName: string;
+  cnicNicopNo: string;
   vehicleInfo: string;
-  vehicleLicense?: string;
   visitDetail: string;
   validity: string;
-  cnicNicopNo: string;
-  hostDetails?: string;
   status: boolean;
-  cardStatus?: number;
-  externalUserId?: string;
-  sno?: number;
 }
 
-type SelectedVisitorRow = Pick<ExternalVisitorPass, 'id'>;
+type TabType = 'upcoming' | 'previous';
 
-const toVisitorPassTypeLabel = (passType?: string | number): string => {
-  if (passType === 'DayPass' || passType === 1) return 'Day Pass';
-  if (passType === 'LongDay' || passType === 2) return 'Long Stay';
-  return '-';
-};
-
-export default function VisitorsPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { searchValue } = useSearch();
+export default function VisitorPage() {
+  const [upcoming, setUpcoming] = useState<Visitor[]>([]);
+  const [previous, setPrevious] = useState<Visitor[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [hostModalOpen, setHostModalOpen] = useState(false);
-  const [selectedHost, setSelectedHost] = useState<any>(null);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [selectedVisitor, setSelectedVisitor] = useState<SelectedVisitorRow | null>(null);
-  const [localRemovedIds, setLocalRemovedIds] = useState<string[]>([]);
-  const [editVisitorId, setEditVisitorId] = useState<string | undefined>();
-  const [hasCheckedId, setHasCheckedId] = useState(false);
-  const { data, isLoading, isError, error } = useVisitors(currentPage, 10);
-  const { data: editVisitorDetails, isLoading: isEditVisitorLoading } = useVisitorById(editVisitorId);
-  const { mutateAsync: deleteVisitor, isPending: isDeleting } = useDeleteVisitor();
-  const { mutateAsync: createVisitor } = useCreateVisitor();
-  const { mutateAsync: updateVisitor } = useUpdateVisitor();
-  const [formError, setFormError] = useState('');
-  const modalMode = searchParams?.get('modal');
-  const modalId = searchParams?.get('id');
-  const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [selectedRow, setSelectedRow] = useState<Visitor | null>(null);
-  
+
+  const [activeTab, setActiveTab] = useState<TabType>('upcoming');
+
+  const { searchValue } = useSearch();
+
+  // ================= FETCH =================
+  const fetchVisitors = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      const token =
+        localStorage.getItem('token') ||
+        sessionStorage.getItem('token');
+
+      const res = await fetch(
+        'https://dfpwebp.dhakarachi.org/api/smartdha/visitorpass/get-all-visitors',
+        {
+          method: 'POST',
+          headers: {
+            accept: '*/*',
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            pageNumber: currentPage - 1,
+            pageSize: 10,
+          }),
+        }
+      );
+
+      const json = await res.json();
+      const data = json?.data;
+
+      const upcomingRaw = data?.upcomingVisitors || [];
+      const previousRaw = data?.previousVisitors || [];
+
+      const mapVisitor = (item: any, idx: number): Visitor => ({
+        sno: idx + 1,
+        id: item.id,
+        visitorName: item.name || '-',
+        cnicNicopNo: item.cnic || '-',
+        vehicleInfo:
+          item.vehicleLicense || item.vehicleLicenseNo
+            ? `${item.vehicleLicense || ''}${
+                item.vehicleLicenseNo ? `-${item.vehicleLicenseNo}` : ''
+              }`
+            : '-',
+        visitDetail: item.visitorPassType || '-',
+        validity: `${item.fromDate?.split('T')[0] || ''} - ${
+          item.toDate?.split('T')[0] || ''
+        }`,
+        status: true,
+      });
+
+      setUpcoming(upcomingRaw.map(mapVisitor));
+      setPrevious(previousRaw.map(mapVisitor));
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load visitors');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (modalMode === 'edit') {
-      if (modalId) {
-        setEditVisitorId(modalId);
-        setHasCheckedId(true);
-      } else {
-        const selected = getTableRow<any>('visitors');
-        if (selected?.id) {
-          setEditVisitorId(String(selected.id));
-          clearTableRow('visitors');
-          setHasCheckedId(true);
-        }
-      }
-    }
-  }, [modalMode, modalId]);
+    fetchVisitors();
+  }, [currentPage]);
 
-  console.log('Fetched visitors data:', data);
+  // ================= ACTIVE DATA =================
+  const activeData = activeTab === 'upcoming' ? upcoming : previous;
 
-  const rawVisitors = [
-  ...(data?.data?.upcomingVisitors || []),
-  ...(data?.data?.previousVisitors || [])
-];
+  // ================= SEARCH =================
+  const filteredVisitors = useMemo(() => {
+    return activeData.filter((item) =>
+      Object.values(item).some((val) =>
+        String(val).toLowerCase().includes(searchValue.toLowerCase())
+      )
+    );
+  }, [activeData, searchValue]);
 
-const pageSize = 10;
-
-const visitors = rawVisitors
-  .filter((item) => item && !localRemovedIds.includes(item.id))
-  .map((item, idx) => ({
-    sno: (currentPage - 1) * pageSize + idx + 1,
-    id: item.id,
-
-    visitorName: item.name || '-',
-    cnicNicopNo: item.cnic || '-',
-
-    vehicleInfo:
-  item.vehicleLicense || item.vehicleLicenseNo
-    ? `${item.vehicleLicense || ''}${item.vehicleLicenseNo ? `-${item.vehicleLicenseNo}` : ''}`
-    : '-',
-    visitDetail:
-      item.visitorPassType === 'DayPass' || item.visitorPassType === 1
-        ? 'Day Pass'
-        : 'Long Stay',
-    validity: `${formatDateDisplay(item.fromDate)} - ${formatDateDisplay(item.toDate)}`,
-    status: true,
-  }));
-
-  const handleAddNew = () => {
-    router.push('/visitors?modal=add');
-  };
-  const handleView = (visitor: Visitor) => {
-  setSelectedRow(visitor);
-  setViewModalOpen(true);
-  };
-  const handleEdit = (visitor: Visitor) => {
-    saveTableRow('visitors', { id: visitor.id });
-    router.push(`/visitors?modal=edit&id=${encodeURIComponent(visitor.id)}`);
-  };
-
-  const handleCloseModal = () => {
-    setEditVisitorId(undefined);
-    setHasCheckedId(false);
-    setFormError('');
-    router.push('/visitors');
-  };
-
-  const toDateInputValue = (value?: string) => {
-    if (!value) return '';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '';
-    return date.toISOString().split('T')[0];
-  };
-
-  const toIsoDate = (value?: string) => {
-    if (!value) return new Date().toISOString();
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
-  };
-
-  const toVehicleLicensePlate = (vehicleNo?: string, vehicleNo2?: string) => {
-    const firstPart = (vehicleNo ?? '').trim();
-    const secondPart = (vehicleNo2 ?? '').trim();
-    if (!firstPart && !secondPart) return '';
-    return `${firstPart}-${secondPart}`;
-  };
-
-  const toVisitorPassType = (quickPick?: string): number | null => {
-    if (quickPick === 'LongStay') return 2;
-    if (quickPick === 'DayPass') return 1;
-    return null;
-  };
-
-  const toQuickPick = (passType?: string | number): string => {
-    if (passType === 2) return 'LongStay';
-    if (passType === 1) return 'DayPass';
-    return 'DayPass';
-  };
-
-  const handleAddVisitor = async (data: ProfileFormData) => {
-    setFormError('');
-    try {
-      const visitorPassType = toVisitorPassType(data.quickPick);
-      if (visitorPassType === null) {
-        throw new Error('Please select a Quick Pick option.');
-      }
-
-      let externalUserId = 'system';
-      try {
-        const users = await getAllExternalUsers();
-        const firstValid = users.find((u: any) => u.id);
-        if (firstValid && firstValid.id) {
-          externalUserId = firstValid.id;
-        }
-      } catch {
-        externalUserId = 'system';
-      }
-
-      await createVisitor({
-        name: data.fullName || '',
-        cnic: data.cnic || '',
-        vehicleLicensePlate: toVehicleLicensePlate(data.vehicleNo, data.vehicleNo2),
-        vehicleLicenseNo: Number(data.vehicleNo2 || 0),
-        visitorPassType: visitorPassType || 1,
-        validFrom: toIsoDate(data.fromDate),
-        validTo: toIsoDate(data.toDate),
-        externalUserId,
-      });
-      handleCloseModal();
-    } catch (err: any) {
-      const message = err?.response?.data?.errorMessage || err?.message || 'Failed to create visitor';
-      setFormError(message);
-    }
-  };
-
-  const initialVisitorValues = useMemo<ProfileFormData | null>(() => {
-    if (!editVisitorDetails?.data) return null;
-    const data = editVisitorDetails.data;
-    return {
-      fullName: data.name || '',
-      cnic: data.cnic || '',
-      vehicleNo: data.vehicleLicensePlate?.split('-')[0] || '',
-      vehicleNo2: String(data.vehicleLicenseNo || ''),
-      licensePlate: data.vehicleLicensePlate || '',
-      qrReference: data.qrCode || '',
-      quickPick: toQuickPick(data.visitorPassType),
-      fromDate: toDateInputValue(data.validFrom),
-      toDate: toDateInputValue(data.validTo),
-      isActive: data.isActive,
-      tagId: '',
-      tagNumber: '',
-      tagType: '',
-      validFrom: '',
-      validTo: '',
-      entityType: '',
-      entityId: '',
-    };
-  }, [editVisitorDetails]);
-
-  const filteredVisitors = visitors.filter((item) =>
-    item.visitorName.toLowerCase().includes(searchValue.toLowerCase()) ||
-    item.cnicNicopNo.toLowerCase().includes(searchValue.toLowerCase()) ||
-    item.vehicleInfo.toLowerCase().includes(searchValue.toLowerCase()) ||
-    item.visitDetail.toLowerCase().includes(searchValue.toLowerCase()) ||
-    item.validity.toLowerCase().includes(searchValue.toLowerCase())
-  );
-
-  const handleUpdateVisitor = async (formData: ProfileFormData) => {
-    if (!editVisitorId || !editVisitorDetails?.data) return;
-    setFormError('');
-    try {
-      const visitorData = editVisitorDetails.data;
-      const visitorPassType = toVisitorPassType(formData.quickPick);
-
-      const userRaw = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
-      let lastModifiedBy = 'system';
-      if (userRaw) {
-        try {
-          const user = JSON.parse(userRaw);
-          lastModifiedBy = user?.fullName || user?.name || user?.email || 'system';
-        } catch {
-          lastModifiedBy = 'system';
-        }
-      }
-
-      const isActive = formData.isActive ?? visitorData.isActive;
-
-      await updateVisitor({
-        id: editVisitorId,
-        name: formData.fullName || visitorData.name || '',
-        cnic: formData.cnic || visitorData.cnic || '',
-        vehicleLicensePlate: toVehicleLicensePlate(formData.vehicleNo, formData.vehicleNo2),
-        vehicleLicenseNo: Number(formData.vehicleNo2 || visitorData.vehicleLicenseNo || 0),
-        visitorPassType: visitorPassType || visitorData.visitorPassType || 1,
-        validFrom: toIsoDate(formData.fromDate),
-        validTo: toIsoDate(formData.toDate),
-        isActive,
-        isDeleted: !isActive,
-        lastModifiedBy,
-      });
-      handleCloseModal();
-    } catch (err: any) {
-      const message = err?.response?.data?.errorMessage || err?.message || 'Failed to update visitor';
-      setFormError(message);
-    }
-  };
-
-  const handleDelete = (visitor: SelectedVisitorRow) => {
-    setSelectedVisitor(visitor);
-    setDeleteModalOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!selectedVisitor) {
-      return;
-    }
-
-    try {
-      const response = await deleteVisitor({ id: selectedVisitor.id });
-      const isSuccess = response?.statusCode === 0 || response?.statusCode === 200;
-      if (isSuccess) {
-        setLocalRemovedIds((prev) => [...prev, selectedVisitor.id]);
-      }
-    } catch {
-      
-    }
-
-    setDeleteModalOpen(false);
-    setSelectedVisitor(null);
-  };
-
-  const handleHostClick = (row: Visitor) => {
-    const visitorData = rawVisitors.find((v) => v.id === row.id);
-    if (visitorData) {
-      setSelectedHost({
-        id: visitorData.externalUserId,
-        name: visitorData.externalUserName || 'Unknown',
-        phone: '',
-        address: visitorData.visitorPassType === 'LongStay' ? 'Long Stay' : 'Day Pass',
-        imageUrl: undefined,
-      });
-    }
-    setHostModalOpen(true);
-  };
-
+  // ================= COLUMNS =================
   const columns: Column<Visitor>[] = [
     { key: 'sno', header: 'S.No' },
     { key: 'visitorName', header: 'Visitor Name' },
-    //{ key: 'userName', header: 'User Name' },
     { key: 'vehicleInfo', header: 'Vehicle Info' },
     { key: 'visitDetail', header: 'Visit Detail' },
     { key: 'validity', header: 'Validity' },
-    { key: 'cnicNicopNo', header: 'CNIC/NICOP No.' },
+    { key: 'cnicNicopNo', header: 'CNIC/NICOP No' },
   ];
 
   return (
-    <DashboardLayout pageTitle="Visitor">
-      <DataTable<Visitor>
-  columns={columns}
-  data={filteredVisitors}
-  loading={isLoading}
-  onAddClick={handleAddNew}
-  addButtonLabel="Add New"
-  currentPage={currentPage}
-  onPageChange={setCurrentPage}
-  getRowStatus={(row) => row.status ? 'Active' : 'Inactive'}
-  error={
-    isError
-      ? `Failed to load visitors: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      : undefined
-  }
-/>
+    <DashboardLayout pageTitle="Visitor Pass">
 
-      <FormModal
-        isOpen={modalMode === 'add'}
-        onClose={handleCloseModal}
-        title="Add New Visitor"
-      >
-        {formError && <div style={{ color: 'red', marginBottom: 12 }}>{formError}</div>}
-        <CommonEntityForm
-          title="Please provide details below!"
-          onSave={handleAddVisitor}
-          onCancel={handleCloseModal}
-          fields={visitorFields.filter((f) => f.name !== 'description')}
-          saveButtonText="Create"
-          showStatusToggle={false}
-        />
-      </FormModal>
-
-      <FormModal
-        isOpen={modalMode === 'edit' && hasCheckedId}
-        onClose={handleCloseModal}
-        title="Edit Visitor"
-      >
-        {formError && <div style={{ color: 'red', marginBottom: 12 }}>{formError}</div>}
-        {isEditVisitorLoading ? (
-          <div style={{ padding: '20px', textAlign: 'center' }}>Loading...</div>
-        ) : initialVisitorValues ? (
-          <CommonEntityForm
-            key={editVisitorId}
-            title="Please update details below!"
-            onSave={handleUpdateVisitor}
-            onCancel={handleCloseModal}
-            fields={visitorFields.filter((f) => f.name !== 'description')}
-            initialValues={initialVisitorValues}
-            saveButtonText="Update"
-            showStatusToggle={false}
-          />
-        ) : (
-          <div style={{ padding: '20px', textAlign: 'center' }}>Error loading visitor details</div>
-        )}
-      </FormModal>
-      <FormModal
-  isOpen={viewModalOpen}
-  onClose={() => {
-    setViewModalOpen(false);
-    setSelectedRow(null);
-  }}
-  title="Visitor Details"
->
-  {selectedRow ? (
-    <div
+      {/* ================= TABS ================= */}
+      {/* WRAPPER to match table width */}
+<div style={{ width: '100%' }}>
+  
+  {/* TABS */}
+  <div
+    style={{
+      display: 'flex',
+      width: '100%',
+      borderBottom: '1px solid #e5e7eb',
+    }}
+  >
+    <button
+      onClick={() => setActiveTab('upcoming')}
       style={{
-        width: "380px",
-        maxWidth: "90vw",
-        margin: "0 auto",
-        display: "grid",
-        gap: "10px",
-        padding: "10px 0",
+        flex: 1, // 👈 equal width
+        padding: '12px 20px',
+        border: 'none',
+        background: 'transparent',
+        color: activeTab === 'upcoming' ? '#22c55e' : '#6b7280',
+        fontWeight: activeTab === 'upcoming' ? 600 : 500,
+        cursor: 'pointer',
+        textAlign: 'center', // 👈 center text
       }}
     >
-      {[
-        { label: "Visitor Name", value: selectedRow.visitorName },
-        { label: "CNIC", value: selectedRow.cnicNicopNo },
-        { label: "Vehicle Info", value: selectedRow.vehicleInfo },
-        { label: "Visit Detail", value: selectedRow.visitDetail },
-        { label: "Validity", value: selectedRow.validity },
-        { label: "Status", value: selectedRow.status ? "Active" : "Inactive" },
-      ].map((item, i) => (
-        <div
-          key={i}
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "10px 12px",
-            borderRadius: "10px",
-            background: "#f9fafb",
-            border: "1px solid #eef2f7",
-          }}
-        >
-          <span
-            style={{
-              color: "#16a34a",
-              fontWeight: 600,
-              fontSize: "13px",
-            }}
-          >
-            {item.label}
-          </span>
+      Upcoming Visitors
+    </button>
 
-          <span
-            style={{
-              color: "#111827",
-              fontWeight: 500,
-              fontSize: "13px",
-              textAlign: "right",
-              flex: 1,
-              wordBreak: "break-word",
-            }}
-          >
-            {item.value || "-"}
-          </span>
-        </div>
-      ))}
-    </div>
-  ) : (
-    <div style={{ textAlign: "center", padding: "20px" }}>
-      No data selected
-    </div>
-  )}
-</FormModal>
-      <HostDetailsModal open={hostModalOpen} onClose={() => setHostModalOpen(false)} host={selectedHost || { id: '', name: '', phone: '', address: '', imageUrl: '' }} />
-      <WarningModal
-        isOpen={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
-        onConfirm={handleConfirmDelete}
-        title="Delete Visitor"
-        message={isDeleting ? 'Deleting...' : 'Are you sure you want to delete this visitor? This action cannot be undone.'}
+    <button
+      onClick={() => setActiveTab('previous')}
+      style={{
+        flex: 1, // 👈 equal width
+        padding: '12px 20px',
+        border: 'none',
+        background: 'transparent',
+        color: activeTab === 'previous' ? '#22c55e' : '#6b7280',
+        fontWeight: activeTab === 'previous' ? 600 : 500,
+        cursor: 'pointer',
+        textAlign: 'center', // 👈 center text
+      }}
+    >
+      Previous Visitors
+    </button>
+  </div>
+</div>
+
+      {/* ================= TABLE ================= */}
+      <DataTable<Visitor>
+        columns={columns}
+        data={filteredVisitors}
+        loading={loading}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+        error={error || undefined}
       />
     </DashboardLayout>
   );
