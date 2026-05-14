@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import DataTable, { Column } from '../../components/tables/DataTable';
@@ -20,11 +20,12 @@ interface Member {
 }
 
 export default function MemberPage() {
-  const [members, setMembers] = useState<Member[]>([]);
+  const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 10;
 
   const { searchValue } = useSearch();
   const router = useRouter();
@@ -33,9 +34,9 @@ export default function MemberPage() {
   const [selectedRow, setSelectedRow] = useState<Member | null>(null);
 
   // ==============================
-  // FETCH MEMBERS (PAGINATED)
+  // FETCH MEMBERS (ONCE ONLY)
   // ==============================
-  const fetchMembers = async (page: number) => {
+  const fetchMembers = async () => {
     try {
       setLoading(true);
       setError('');
@@ -53,30 +54,24 @@ export default function MemberPage() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            pageNumber: page - 1, // API is 0-based
-            pageSize: 10,
-          }),
         }
       );
 
       const json = await res.json();
       const data = json?.data;
 
-      if (!data) {
-        setMembers([]);
+      if (!data?.items) {
+        setAllMembers([]);
         return;
       }
 
-      setTotalPages(data.totalPages || 1);
-
       const mapped: Member[] = (data.items || []).map(
         (item: any, idx: number) => ({
-          sno: (page - 1) * 10 + idx + 1,
+          sno: idx + 1,
           userId: item.userId,
           name: item.name,
-          email: item.email || '-',
-          mobileNo: item.mobileNo || '-',
+          email: item.email || item.registeredEmail || '-',
+          mobileNo: item.mobileNo || item.registeredMobileNo || '-',
           memberNo: item.memberNo || '-',
           memPk: item.memPk || '-',
           userType: item.userType,
@@ -84,7 +79,7 @@ export default function MemberPage() {
         })
       );
 
-      setMembers(mapped);
+      setAllMembers(mapped);
     } catch (err: any) {
       setError(err?.message || 'Failed to load members');
     } finally {
@@ -92,10 +87,38 @@ export default function MemberPage() {
     }
   };
 
-  // load on page change
   useEffect(() => {
-    fetchMembers(currentPage);
-  }, [currentPage]);
+    fetchMembers();
+  }, []);
+
+  // ==============================
+  // SEARCH FILTER
+  // ==============================
+  const filteredMembers = useMemo(() => {
+    return allMembers.filter((item) =>
+      item.name?.toLowerCase().includes(searchValue.toLowerCase()) ||
+      item.email?.toLowerCase().includes(searchValue.toLowerCase()) ||
+      item.mobileNo?.toLowerCase().includes(searchValue.toLowerCase()) ||
+      item.memberNo?.toLowerCase().includes(searchValue.toLowerCase()) ||
+      item.memPk?.toLowerCase().includes(searchValue.toLowerCase())
+    );
+  }, [allMembers, searchValue]);
+
+  // ==============================
+  // CLIENT-SIDE PAGINATION
+  // ==============================
+  const totalPages = Math.ceil(filteredMembers.length / pageSize);
+
+  const paginatedMembers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    return filteredMembers.slice(start, end);
+  }, [filteredMembers, currentPage]);
+
+  // reset page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchValue]);
 
   // ==============================
   // VIEW MODAL
@@ -117,22 +140,11 @@ export default function MemberPage() {
     { key: 'memPk', header: 'MEM PK' },
   ];
 
-  // ==============================
-  // SEARCH FILTER
-  // ==============================
-  const filteredMembers = members.filter((item) =>
-    item.name?.toLowerCase().includes(searchValue.toLowerCase()) ||
-    item.email?.toLowerCase().includes(searchValue.toLowerCase()) ||
-    item.mobileNo?.toLowerCase().includes(searchValue.toLowerCase()) ||
-    item.memberNo?.toLowerCase().includes(searchValue.toLowerCase()) ||
-    item.memPk?.toLowerCase().includes(searchValue.toLowerCase())
-  );
-
   return (
     <DashboardLayout pageTitle="Members">
       <DataTable<Member>
         columns={columns}
-        data={filteredMembers}
+        data={paginatedMembers}
         loading={loading}
         currentPage={currentPage}
         totalPages={totalPages}

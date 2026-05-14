@@ -37,7 +37,7 @@ const getMenuIcon = (path: string, isActive: boolean): string => {
   return icons ? `/icons/${icons[isActive ? 'active' : 'inactive']}` : '';
 };
 
-export default function DashboardLayout({ children, pageTitle = "Dashboard", userName = "Ahmed Faraz", userAvatarUrl, headerAction, showBackButton }: DashboardLayoutProps) {
+export default function DashboardLayout({ children, pageTitle = "Dashboard", userName = "Loading..", userAvatarUrl, headerAction, showBackButton }: DashboardLayoutProps) {
   const [memberTypeOpen, setMemberTypeOpen] = useState(true);
   const [memberDropdownOpen, setMemberDropdownOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
