@@ -2,19 +2,16 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import DataTable, { StatusBadge, Column } from '../../components/tables/DataTable';
 import WarningModal from '../../components/popup/WarningModal';
 import FormModal from '../../components/popup/FormModal';
-import CommonEntityForm, { ProfileFormData } from '../../components/forms/CommonEntityForm';
-import { saveTableRow, clearTableRow, getTableRow } from '../../lib/tableRowStorage';
-import { useWorkerById } from '../../hooks/workers/useWorkerById';
-import { useCreateWorker } from '../../hooks/workers/useCreateWorker';
-import { useUpdateWorker } from '../../hooks/workers/useUpdateWorker';
-import { useDeleteWorker } from '../../hooks/workers/useDeleteWorker';
-import { workerFields } from './fields';
-import { getAllExternalWorkers } from '../../services/worker.service';
+
 import { useSearch } from '@/context/searchContext';
+import { useWorkers } from '../../hooks/workers/useWorkers';
+import { useDeleteWorker } from '../../hooks/workers/useDeleteWorker';
+import { saveTableRow } from '../../lib/tableRowStorage';
 
 interface Worker {
   id: string;
@@ -25,16 +22,12 @@ interface Worker {
   cnicNicopNo: string;
   policeVerification: 'Yes' | 'No';
   workerCardDelivery: string;
-  fatherOrHusbandName?: string;
   workerStatus: boolean;
   workerCard: string;
   issuedDate?: string;
   expiryDate?: string;
-  cardStatus?: number;
   sno?: number;
 }
-
-type SelectedWorkerRow = { id: string };
 
 const pageSize = 10;
 
@@ -51,95 +44,70 @@ const toJobTypeLabel = (jobType?: number) => {
 
 export default function WorkersPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { searchValue } = useSearch();
 
-  const [allWorkers, setAllWorkers] = useState<Worker[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [selectedWorker, setSelectedWorker] = useState<SelectedWorkerRow | null>(null);
+  const [selectedWorker, setSelectedWorker] = useState<{ id: string } | null>(null);
 
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<Worker | null>(null);
 
-  const [formError, setFormError] = useState('');
-
-  const modalMode = searchParams?.get('modal');
-  const modalId = searchParams?.get('id');
-
-  const { data: editWorkerDetails, isLoading: isEditWorkerLoading } = useWorkerById(modalId || undefined);
-  const { mutateAsync: createWorker } = useCreateWorker();
-  const { mutateAsync: updateWorker } = useUpdateWorker();
+  const { data, isLoading } = useWorkers();
   const { mutateAsync: deleteWorker } = useDeleteWorker();
 
-  // ==============================
-  // FETCH ALL WORKERS (NO PARAMS)
-  // ==============================
-  const fetchWorkers = async () => {
-    try {
-      const res = await getAllExternalWorkers(); // NO pagination params
+  // =========================
+  // FLATTEN API DATA (FIX CORE ISSUE)
+  // =========================
+  const allWorkers: Worker[] = useMemo(() => {
+    const users = data ?? [];
 
-      const mapped: Worker[] =
-        (res?.data?.items ?? []).flatMap((user: any, userIdx: number) =>
-          (user.workers ?? []).map((w: any, idx: number) => ({
-            sno: userIdx * 100 + idx + 1,
-            id: w.workerId,
-            workerName: w.name || '-',
-            jobType: toJobTypeLabel(w.jobType),
-            phone: w.phoneNo || '-',
-            dob: w.dob || '-',
-            cnicNicopNo: w.cnic || '-',
-            policeVerification: w.policeVerification ? 'Yes' : 'No',
-            workerCardDelivery: w.workerCardDeliveryType || '-',
-            workerStatus: w.isActive ?? false,
-            workerCard: w.workerCardNo || '-',
-            issuedDate: w.validFrom || '-',
-            expiryDate: w.validTo || '-',
-            cardStatus: w.cardStatus ?? 0,
-          }))
-        );
+    return users.flatMap((user: any, userIdx: number) =>
+      (user.workers ?? []).map((w: any, idx: number) => ({
+        sno: userIdx * 100 + idx + 1,
+        id: w.workerId,
+        workerName: w.name || '-',
+        jobType: toJobTypeLabel(w.jobType),
+        phone: w.phoneNo || '-',
+        dob: w.dob || '-',
+        cnicNicopNo: w.cnic || '-',
+        policeVerification: w.policeVerification ? 'Yes' : 'No',
+        workerCardDelivery: String(w.workerCardDeliveryType ?? '-'),
+        workerStatus: w.isActive ?? false,
+        workerCard: w.workerCardNumber || '-',
+        issuedDate: w.validFrom || '-',
+        expiryDate: w.validTo || '-',
+      }))
+    );
+  }, [data]);
 
-      setAllWorkers(mapped);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  useEffect(() => {
-    fetchWorkers();
-  }, []);
-
-  // ==============================
+  // =========================
   // SEARCH
-  // ==============================
+  // =========================
   const filteredWorkers = useMemo(() => {
     return allWorkers.filter((item) =>
-      item.workerName.toLowerCase().includes(searchValue.toLowerCase()) ||
-      item.jobType.toLowerCase().includes(searchValue.toLowerCase()) ||
-      item.phone.toLowerCase().includes(searchValue.toLowerCase()) ||
-      item.dob.toLowerCase().includes(searchValue.toLowerCase()) ||
-      item.cnicNicopNo.toLowerCase().includes(searchValue.toLowerCase())
+      Object.values(item).join(' ').toLowerCase().includes(searchValue.toLowerCase())
     );
   }, [allWorkers, searchValue]);
 
-  // ==============================
-  // PAGINATION (CLIENT SIDE)
-  // ==============================
-  const totalPages = Math.ceil(filteredWorkers.length / pageSize);
+  // reset page on search
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchValue]);
+
+  // =========================
+  // PAGINATION
+  // =========================
+  const totalPages = Math.max(1, Math.ceil(filteredWorkers.length / pageSize));
 
   const paginatedWorkers = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return filteredWorkers.slice(start, start + pageSize);
   }, [filteredWorkers, currentPage]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchValue]);
-
-  // ==============================
+  // =========================
   // ACTIONS
-  // ==============================
+  // =========================
   const handleAddNew = () => router.push('/workers?modal=add');
 
   const handleEdit = (worker: Worker) => {
@@ -152,7 +120,7 @@ export default function WorkersPage() {
     setViewModalOpen(true);
   };
 
-  const handleDelete = (worker: SelectedWorkerRow) => {
+  const handleDelete = (worker: { id: string }) => {
     setSelectedWorker(worker);
     setDeleteModalOpen(true);
   };
@@ -160,20 +128,15 @@ export default function WorkersPage() {
   const handleConfirmDelete = async () => {
     if (!selectedWorker) return;
 
-    try {
-      await deleteWorker({ id: selectedWorker.id });
-      fetchWorkers(); // refresh
-    } catch (err) {
-      console.error(err);
-    }
+    await deleteWorker({ id: selectedWorker.id });
 
     setDeleteModalOpen(false);
     setSelectedWorker(null);
   };
 
-  // ==============================
-  // COLUMNS
-  // ==============================
+  // =========================
+  // TABLE COLUMNS
+  // =========================
   const columns: Column<Worker>[] = [
     { key: 'sno', header: 'S.No' },
     { key: 'workerName', header: 'Worker Name' },
@@ -185,7 +148,9 @@ export default function WorkersPage() {
     {
       key: 'workerStatus',
       header: 'Status',
-      render: (value: boolean) => <StatusBadge type="activeInactive" value={value} />
+      render: (value: boolean) => (
+        <StatusBadge type="activeInactive" value={value} />
+      ),
     },
     { key: 'workerCard', header: 'Card No' },
     { key: 'issuedDate', header: 'Issued' },
@@ -197,7 +162,7 @@ export default function WorkersPage() {
       <DataTable<Worker>
         columns={columns}
         data={paginatedWorkers}
-        loading={false}
+        loading={isLoading}
         onAddClick={handleAddNew}
         addButtonLabel="Add New"
         currentPage={currentPage}

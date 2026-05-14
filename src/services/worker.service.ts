@@ -34,7 +34,7 @@ export interface ApiResponse<T> {
 export const getAllExternalWorkers = async () => {
   const { data } = await apiClient.post(
     "/api/smartdha/worker/get-all-workers",
-    {} // ✅ no pageNumber, no pageSize
+    {}
   );
 
   return data;
