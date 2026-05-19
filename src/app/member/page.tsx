@@ -135,6 +135,7 @@ export default function MemberPage() {
     { key: 'sno', header: 'S.No' },
     { key: 'name', header: 'Name' },
     { key: 'email', header: 'Email' },
+    {key: 'userType', header: 'User Type'},
     { key: 'mobileNo', header: 'Mobile No' },
     { key: 'memberNo', header: 'Member No' },
     { key: 'memPk', header: 'MEM PK' },
