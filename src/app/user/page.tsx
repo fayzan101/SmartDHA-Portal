@@ -10,6 +10,7 @@ import CommonEntityForm from '../../components/forms/CommonEntityForm';
 import { nonMemberFields } from './nonmemberfield';
 import { useRouter } from 'next/navigation';
 import { useSearch } from '@/context/searchContext';
+import { sub } from 'framer-motion/client';
 
 export default function NonMemberPage() {
   const { data = [], isLoading } = useMemberTypesRequests();
@@ -215,6 +216,7 @@ return [
   { key: 'sno', header: 'S.No' },
   { key: 'name', header: 'Name' },
   { key: 'cnic', header: 'CNIC' },
+  {key: 'subCategory', header: 'Sub Category'},
   { key: 'phone', header: 'Phone' },
   { key: 'phase', header: 'Phase' },
   { key: 'zone', header: 'Zone' },
@@ -223,28 +225,26 @@ return [
   { key: 'plot', header: 'Plot' },
   { key: 'floors', header: 'Floor' },
   // ✅ Only add action column for Residential, not for Commercial
-  ...(subTab === 'residential' 
-    ? [{
-        key: 'action',
-        header: 'Action',
-        render: (_: any, row: any) => (
-          <button
-            onClick={() => router.push(`/familydetails/${row.userId}`)}
-            style={{
-              padding: '6px 12px',
-              borderRadius: 6,
-              border: '1px solid #22c55e',
-              background: '#22c55e',
-              color: '#fff',
-              fontSize: '12px',
-              cursor: 'pointer',
-            }}
-          >
-            View More
-          </button>
-        ),
-      }] 
-    : []),
+  {
+  key: 'action',
+  header: 'Action',
+  render: (_: any, row: any) => (
+    <button
+      onClick={() => router.push(`/familydetails/${row.userId}`)}
+      style={{
+        padding: '6px 12px',
+        borderRadius: 6,
+        border: '1px solid #22c55e',
+        background: '#22c55e',
+        color: '#fff',
+        fontSize: '12px',
+        cursor: 'pointer',
+      }}
+    >
+      View More
+    </button>
+  ),
+}
 ];
   }, [mainTab, subTab]);
 
